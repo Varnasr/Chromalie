@@ -217,7 +217,7 @@ function render(){
   prepareClipped();
   if(tool==='erase'){
    epc.globalCompositeOperation='source-over';epc.clearRect(0,0,paint.width,paint.height);epc.drawImage(paint,0,0);epc.globalCompositeOperation='destination-out';epc.drawImage(clipped,0,0);epc.globalCompositeOperation='source-over';
-   ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<paintLayers.length;i++)ctx.drawImage(i===activeLayer?eraserPreview:paintLayers[i].canvas,0,0);ctx.globalCompositeOperation='multiply';ctx.drawImage(ink,0,0);ctx.globalCompositeOperation='source-over';
+   ctx.fillStyle='white';ctx.fillRect(0,0,canvas.width,canvas.height);for(let i=0;i<paintLayers.length;i++){const layer=paintLayers[i];if(layer.visible===false)continue;ctx.save();ctx.globalAlpha=layer.opacity??1;ctx.drawImage(i===activeLayer?eraserPreview:layer.canvas,0,0);ctx.restore();}ctx.globalCompositeOperation='multiply';ctx.drawImage(ink,0,0);ctx.globalCompositeOperation='source-over';
   }else{ctx.drawImage(clipped,0,0);}
  }
  if(!(strokeActive&&tool==='erase')){ctx.globalCompositeOperation='multiply';ctx.drawImage(ink,0,0);ctx.globalCompositeOperation='source-over';}
