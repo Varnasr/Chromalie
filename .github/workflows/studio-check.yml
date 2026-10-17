@@ -1,0 +1,23 @@
+name: Validate painting studio
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: |
+          for file in dist/*.js; do node --check "$file"; done
+      - name: Test colouring engine
+        run: node --test tests/engine.test.js
+      - name: Install browser test tools
+        run: |
+          npm i --no-save playwright-core@1.56.1 axe-core@4.10.3
+          node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Run browser and accessibility tests
+        run: node tests/ui.test.mjs

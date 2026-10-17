@@ -1,0 +1,65 @@
+name: Report Chromalie deployment failures
+on:
+  workflow_run:
+    workflows: ["Publish Chromalie"]
+    types: [completed]
+permissions:
+  actions: read
+  contents: read
+  issues: write
+jobs:
+  report:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.head_branch == 'main' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update deployment failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const {owner, repo} = context.repo;
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner, repo, run_id: run.id, per_page: 100
+            });
+            const failed = jobs.filter(j => j.conclusion === 'failure');
+            let details = [];
+            for (const job of failed) {
+              const steps = (job.steps || []).filter(s => s.conclusion === 'failure').map(s => s.name);
+              let tail = '';
+              try {
+                const response = await github.rest.actions.downloadJobLogsForWorkflowRun({
+                  owner, repo, job_id: job.id
+                });
+                const raw = String(response.data || '');
+                const clean = raw.replace(/\\x1b\\[[0-9;]*m/g, '');
+                const lines = clean.split('\\n');
+                const hits = lines.map((line, index) =>
+                  /FAIL |TimeoutError|ReferenceError|SyntaxError|locator\\.click:|##\\[error\\]|Error:|failed to|not visible/i.test(line) ? index : -1
+                ).filter(index => index >= 0);
+                const selected = new Set();
+                for (const index of hits.slice(-12)) {
+                  for (let i = Math.max(0,index-3); i <= Math.min(lines.length-1,index+8); i++) selected.add(i);
+                }
+                tail = selected.size ? [...selected].sort((a,b)=>a-b).map(i=>lines[i]).join('\\n') : lines.slice(-50).join('\\n');
+              } catch (e) {
+                tail = 'Logs unavailable: ' + e.message;
+              }
+              details.push('### ' + job.name + '\nFailed steps: ' + (steps.join(', ') || 'unknown') +
+                '\n\n<details><summary>Last log lines</summary>\n\n```text\n' +
+                tail.slice(-6000).replace(/```/g, '`` `') + '\n```\n</details>');
+            }
+            const marker = '<!-- chromalie-deployment-failure -->';
+            const body = marker + '\nChromalie publication is blocked.\n\n' +
+              '**Failed run:** ' + run.html_url + '\n**Commit:** `' + run.head_sha + '`\n\n' +
+              details.join('\n\n') + '\n\nResolve the underlying failure; do not bypass tests.';
+            const existing = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, state: 'open', per_page: 100
+            });
+            const issue = existing.find(i => !i.pull_request && i.body?.includes(marker));
+            if (issue) {
+              await github.rest.issues.update({owner, repo, issue_number: issue.number,
+                title: 'Chromalie deployment failing', body});
+            } else {
+              await github.rest.issues.create({owner, repo,
+                title: 'Chromalie deployment failing', body});
+            }

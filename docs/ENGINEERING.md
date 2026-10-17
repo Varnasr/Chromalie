@@ -1,0 +1,49 @@
+# Chromalie engineering guide
+
+## Architecture
+
+Chromalie is a static client-side website deployed through GitHub Pages at https://chromalie.page. The shipped site lives under `dist/`. There is no user account or server-side painting service.
+
+- `dist/index.html` and `dist/style.css`: page structure, studio controls and responsive presentation.
+- `dist/app.js`: studio state, canvas composition, painting operations, undo/redo, IndexedDB persistence, library integration and exports.
+- `dist/engine.js` and the worker: shape/region processing and masks. Read the implementation before changing pixel thresholds or region IDs.
+- `dist/mobile.js`: moves existing controls into mobile strips. Keep original element IDs and listeners intact.
+- `dist/journal.js`: local saved-work journal.
+- `dist/guide.js`: tour and tooltips.
+- `dist/catalog.json`: prepared artwork metadata. The catalogue is not a live Google Drive feed.
+
+## Rendering model
+
+The original line artwork is kept apart from the transparent painting canvas. Compositing paints onto white, then multiplies the original line artwork over it, preserving printed outlines and shading. Brush operations are drawn to temporary canvases and clipped to selected regions in automatic mode. Some media apply additional pixel processing before committing to the paint canvas.
+
+Undo/redo currently stores paint-canvas image snapshots, capped at ten changes. Introducing independent layers requires revisiting snapshot history, composition, export and persistence together. Do not treat the existing single paint canvas as a fully implemented layer system.
+
+## Regions and stylus
+
+Region analysis occurs asynchronously. Shapes are derived from artwork pixels; faint boundaries, gaps, large background areas and scanned artefacts can affect segmentation. Gap closing is adjustable, but should be regression-tested with intricate pages.
+
+Pointer Events carry touch/pen input. Pressure behaviour depends on the device/browser; desktop browser automation does not establish palm rejection or stylus fidelity on hardware.
+
+## Storage and recovery
+
+IndexedDB stores artwork blobs, thumbnails and settings locally. The studio schedules debounced saves and serialises writes through a promise chain. Failed writes must remain visible as unsaved work; the user can retry or export. Navigation should not silently discard unsaved painting data. JSON project export is a separate backup path. Verify changes using a forced IndexedDB failure as well as normal save/reopen tests.
+
+## Artwork pipeline
+
+`assets-manifest.json` specifies approved image assets and expected checksums. `scripts/import-assets.py` restores assets for builds and validates size and SHA-256. Imported artwork belongs in the deployment artifact; CI must not push generated files back to `main`. Check catalogue IDs, credits, rights and existing IndexedDB keys before changing artwork.
+
+## Build and release
+
+`.github/workflows/deploy.yml` runs on pushes to `main`. The pipeline imports approved artwork, runs engine tests and browser tests, stamps static assets, uploads the GitHub Pages artifact and checks the live `version.json` commit. Screenshots are uploaded as workflow artifacts.
+
+Tests: `node --test tests/engine.test.js`, `node tests/ui.test.mjs` with Playwright Chromium and axe-core installed, and JavaScript syntax checks. Read the workflow for exact versions and commands. Browser coverage includes several viewport sizes, but real touch/stylus testing is still required.
+
+A commit is **not** a verified deployment. Check Actions success, the live commit stamp, public assets and responsive screenshots before marking a batch complete.
+
+## Contribution checklist
+
+1. Preserve the existing visual identity, library IDs, credits and saved-work compatibility.
+2. Make a small, reviewable change; update relevant docs and tests.
+3. Test the painting workflow on phone and desktop widths, including failure and recovery paths.
+4. Avoid claiming native pigment physics, guaranteed offline access or full layers until implemented.
+5. Verify deployment and accessibility before release sign-off.
