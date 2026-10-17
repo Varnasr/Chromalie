@@ -99,7 +99,7 @@ jobs:
           homepage=get('/')
           if b'Chromalie' not in homepage and b'chromalie' not in homepage:
               raise SystemExit('Live homepage does not contain Chromalie branding')
-          for path in ('app.js','engine.js','mobile.js','journal.js','style.css'):
+          for path in ('app.js','engine.js','mobile.js','journal.js','style.css','about.html','help.html'):
               body=get(path)
               if len(body)<100:
                   raise SystemExit(f'Live asset missing or suspiciously short: {path}')
