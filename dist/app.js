@@ -41,7 +41,7 @@ function drawLayerControls(){
   up.onclick=()=>{finishStroke();syncLayer();[paintLayers[i],paintLayers[i+1]]=[paintLayers[i+1],paintLayers[i]];if(activeLayer===i)activeLayer=i+1;else if(activeLayer===i+1)activeLayer=i;drawLayerControls();render();scheduleSave();};
   const down=document.createElement('button');down.type='button';down.textContent='↓';down.setAttribute('aria-label','Move '+layer.name+' down');down.disabled=i===0;
   down.onclick=()=>{finishStroke();syncLayer();[paintLayers[i],paintLayers[i-1]]=[paintLayers[i-1],paintLayers[i]];if(activeLayer===i)activeLayer=i-1;else if(activeLayer===i-1)activeLayer=i;drawLayerControls();render();scheduleSave();};
-  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete '+layer.name);remove.disabled=paintLayers.length===1;
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete '+layer.name);remove.title='Delete '+layer.name;remove.disabled=paintLayers.length===1;
   remove.onclick=()=>{if(!confirm('Delete '+layer.name+'? This removes its painting.'))return;finishStroke();syncLayer();paintLayers.splice(i,1);if(activeLayer===i){activeLayer=Math.min(i,paintLayers.length-1);pc.clearRect(0,0,paint.width,paint.height);pc.drawImage(paintLayers[activeLayer].canvas,0,0);undoStack=paintLayers[activeLayer].undo||[];redoStack=paintLayers[activeLayer].redo||[];updateHistory();}else if(activeLayer>i)activeLayer--;drawLayerControls();render();scheduleSave();};
   item.append(select,visible,opacity,rename,up,down,remove);root.append(item);
  });$('add-layer').disabled=paintLayers.length>=5;
