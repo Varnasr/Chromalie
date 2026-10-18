@@ -2,20 +2,22 @@ name: Publish Chromalie
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
-# Queue publication runs instead of interrupting an active build or deploy.
+# Queue runs on the same ref instead of interrupting an active build.
 # GitHub retains at most one pending run per concurrency group.
+# Netlify site "chromalie" publishes dist/ from main. This workflow does not.
 concurrency:
-  group: chromalie-pages-${{ github.ref }}
+  group: chromalie-ci-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pages: read
     steps:
       - uses: actions/checkout@v6
       - name: Import and verify the approved colouring artwork
@@ -23,7 +25,7 @@ jobs:
       - name: Verify imported artwork without creating a commit
         run: |
           # The approved artwork may be restored from its checksum manifest.
-          # Keep these files in the deployment artifact; do not push from CI.
+          # Keep these files in the build; do not push from CI.
           echo "Artwork imported and verified against assets-manifest.json."
       - name: Check colouring engine
         run: node --test tests/engine.test.js
@@ -48,16 +50,6 @@ jobs:
           node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Browser test and accessibility audit
         run: node tests/ui.test.mjs
-      - name: Write public release identity
-        run: |
-          python3 - <<'PY'
-          import json, os, pathlib
-          pathlib.Path('dist/version.json').write_text(json.dumps({
-            'commit': os.environ['GITHUB_SHA'],
-            'run_id': os.environ['GITHUB_RUN_ID'],
-            'repository': os.environ['GITHUB_REPOSITORY']
-          }) + chr(10))
-          PY
       - name: Preserve responsive screenshots for review
         if: always()
         uses: actions/upload-artifact@v4
@@ -66,68 +58,3 @@ jobs:
           path: test-artifacts/*.png
           if-no-files-found: ignore
           retention-days: 14
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: dist
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Publish website
-        id: deployment
-        uses: actions/deploy-pages@v4
-      - name: Smoke-test the published homepage and painting engine
-        run: |
-          python3 - <<'PY'
-          import urllib.request, urllib.parse, html.parser
-          base='https://chromalie.page/'
-          def get(path):
-              request=urllib.request.Request(urllib.parse.urljoin(base,path),headers={'Cache-Control':'no-cache','User-Agent':'Chromalie-Live-Smoke-Test'})
-              with urllib.request.urlopen(request,timeout=20) as response:
-                  if response.status != 200:
-                      raise SystemExit(f'HTTP {response.status}: {path}')
-                  return response.read()
-          homepage=get('/')
-          if b'Chromalie' not in homepage and b'chromalie' not in homepage:
-              raise SystemExit('Live homepage does not contain Chromalie branding')
-          for path in ('app.js','engine.js','mobile.js','journal.js','style.css','about.html','help.html'):
-              body=get(path)
-              if len(body)<100:
-                  raise SystemExit(f'Live asset missing or suspiciously short: {path}')
-              print(f'Live asset OK: {path} ({len(body)} bytes)')
-          print('Live homepage and core studio assets verified')
-          PY
-      - name: Verify the public website serves this commit
-        env:
-          EXPECTED_COMMIT: ${{ github.sha }}
-          LIVE_VERSION_URL: https://chromalie.page/version.json
-        run: |
-          python3 - <<'PY'
-          import json, os, time, urllib.request
-          url=os.environ['LIVE_VERSION_URL']
-          expected=os.environ['EXPECTED_COMMIT']
-          for attempt in range(18):
-              try:
-                  request=urllib.request.Request(url + '?check=' + expected[:12], headers={'Cache-Control':'no-cache','User-Agent':'Chromalie-Deploy-Verification'})
-                  with urllib.request.urlopen(request, timeout=12) as response:
-                      payload=json.load(response)
-                  actual=payload.get('commit')
-                  if actual == expected:
-                      print('Verified live deployment:', actual, url)
-                      break
-                  print('Published version not updated yet:', actual, 'expected:', expected)
-              except Exception as exc:
-                  print('Live version check:', str(exc))
-              if attempt == 17:
-                  raise SystemExit('Deployment did not become verifiably live within the verification window')
-              time.sleep(10)
-          PY

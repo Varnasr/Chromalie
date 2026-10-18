@@ -2,7 +2,7 @@
 
 ## Architecture
 
-Chromalie is a static client-side website deployed through GitHub Pages at https://chromalie.page. The shipped site lives under `dist/`. There is no user account or server-side painting service.
+Chromalie is a static client-side website hosted on Netlify at https://chromalie.page. The shipped site lives under `dist/`. There is no user account or server-side painting service.
 
 - `dist/index.html` and `dist/style.css`: page structure, studio controls and responsive presentation.
 - `dist/app.js`: studio state, canvas composition, painting operations, undo/redo, IndexedDB persistence, library integration and exports.
@@ -34,11 +34,13 @@ IndexedDB stores artwork blobs, thumbnails and settings locally. The studio sche
 
 ## Build and release
 
-`.github/workflows/deploy.yml` runs on pushes to `main`. The pipeline imports approved artwork, runs engine tests and browser tests, stamps static assets, uploads the GitHub Pages artifact and checks the live `version.json` commit. Screenshots are uploaded as workflow artifacts.
+Netlify site `chromalie` publishes `dist/` from `main`. Its build command is `python3 scripts/import-assets.py && python3 scripts/stamp-assets.py dist`. GitHub Actions does not publish the site, and Netlify does not serve `/version.json`.
+
+`.github/workflows/deploy.yml` (`Publish Chromalie`) runs on pushes to `main` and on pull requests. It imports approved artwork, runs engine tests and browser tests, and stamps static assets. Screenshots are uploaded as workflow artifacts. `.github/workflows/studio-check.yml` runs the same engine and browser tests on pull requests. `.github/workflows/report-deployment-failure.yml` opens an issue only when the main test run fails.
 
 Tests: `node --test tests/engine.test.js`, `node tests/ui.test.mjs` with Playwright Chromium and axe-core installed, and JavaScript syntax checks. Read the workflow for exact versions and commands. Browser coverage includes several viewport sizes, but real touch/stylus testing is still required.
 
-A commit is **not** a verified deployment. Check Actions success, the live commit stamp, public assets and responsive screenshots before marking a batch complete.
+A green Actions run means the build and tests passed. It does not by itself prove that Netlify has published that commit. Check the Netlify deploy, the public site and the responsive screenshots before marking a batch complete.
 
 ## Contribution checklist
 

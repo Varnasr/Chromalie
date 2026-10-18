@@ -22,13 +22,13 @@ Around India is pages 1 to 21 from Monkey Pen's India Colouring Book and pages 2
 
 A commit is **not** a finished feature or a verified public release. Every development batch must meet these conditions before it is marked complete:
 
-1. The colouring-engine tests, browser interaction tests, responsive checks and accessibility audit pass in GitHub Actions.
-2. GitHub Pages publishes successfully, and the live `version.json` reports the commit deployed by that run.
+1. The colouring-engine tests, browser interaction tests, responsive checks and accessibility audit pass in GitHub Actions (`Publish Chromalie` on pushes to `main` and on pull requests).
+2. Netlify site `chromalie` finishes publishing that commit from `main`. The public site does not serve `/version.json`; do not treat a missing version file as a failed release.
 3. The public homepage and core painting assets (`app.js`, `engine.js`, `mobile.js`, `journal.js`, `style.css`) return valid content from `chromalie.page`.
 4. For visible UI changes, inspect the phone and desktop screenshots uploaded as the `chromalie-responsive-screenshots` workflow artifact. Browser screenshots are regression evidence, not a substitute for checking on a real touch device.
 5. Record unverified device-specific behaviours (stylus pressure, palm rejection, printing, sharing and storage recovery) explicitly rather than describing them as finished.
 
-The workflow blocks publication if the pre-deployment tests fail, and marks the deployment job as failed if live verification fails. The release remains unverified until all checks finish successfully.
+`Publish Chromalie` fails when the build or the tests fail. It does not deploy to GitHub Pages. `Report Chromalie deployment failures` opens an issue only for those test failures on `main`. Netlify publishes independently. The release remains unverified until the Netlify deploy and the public site have been checked.
 
 ## Studio
 
@@ -78,15 +78,15 @@ The privacy, cookies and terms pages describe exactly this (`scripts/build-legal
 
 Run `node --test tests/engine.test.js` to verify segmentation boundaries, gap closure, pixel blending and shade calculation.
 
-`tests/ui.test.mjs` is the browser test, and the deploy runs it on the stamped build before publishing: at 390x844 and 1280x900 it opens the library and a page, checks the first-visit tour appears, fills a shape and checks Undo comes alive, opens all four fold-out strips, picks a brush, checks the Share button, then opens the journal and turns to the coloured page. It runs axe (WCAG 2.1 A and AA) over the home page, the tour, the studio with a strip shut and open, and the journal, and fails on any serious or critical finding, any script error or failed request, and any page wider than the screen. Its first run found three things, now fixed: the Download button had no name on a phone (its label is hidden there), the step numbers on the home page were 2.3:1, and a dimmed sheet button was faded below 4.5:1 with opacity. To run it locally, install `playwright-core@1.56.1` and `axe-core@4.10.3` with `npm i --no-save` and then `node tests/ui.test.mjs`; set `CHROME` to use an installed Chromium.
+`tests/ui.test.mjs` is the browser test, and `Publish Chromalie` runs it on the stamped build: at 390x844 and 1280x900 it opens the library and a page, checks the first-visit tour appears, fills a shape and checks Undo comes alive, opens all four fold-out strips, picks a brush, checks the Share button, then opens the journal and turns to the coloured page. It runs axe (WCAG 2.1 A and AA) over the home page, the tour, the studio with a strip shut and open, and the journal, and fails on any serious or critical finding, any script error or failed request, and any page wider than the screen. Its first run found three things, now fixed: the Download button had no name on a phone (its label is hidden there), the step numbers on the home page were 2.3:1, and a dimmed sheet button was faded below 4.5:1 with opacity. To run it locally, install `playwright-core@1.56.1` and `axe-core@4.10.3` with `npm i --no-save` and then `node tests/ui.test.mjs`; set `CHROME` to use an installed Chromium.
 
 Source pages and thumbnails were visually sampled. All catalogue assets, page IDs, counts, HTML control references and icon references were checked. Region detection was exercised on actual flower, owl, geometric, space and cat pages. The browser test covers a desktop and a phone-sized Chromium; Safari on a real iPhone, pinch gestures and storage that survives days still need a person with a device.
 
 ## Hosting
 
-Buildless HTML, CSS and ES modules. GitHub Pages is published from `dist/` by `.github/workflows/deploy.yml`. Select GitHub Actions as the Pages source. The first run verifies artwork against `assets-manifest.json`, imports it from the existing public deployment, and commits the assets to this repository for future builds. No application runtime secrets are required.
+Buildless HTML, CSS and ES modules. Netlify site `chromalie` publishes `dist/` from `main` with the build command `python3 scripts/import-assets.py && python3 scripts/stamp-assets.py dist`. `.github/workflows/deploy.yml` runs that build and the tests on pushes to `main` and on pull requests. It does not publish the site. `scripts/import-assets.py` verifies artwork against `assets-manifest.json` and restores any missing approved files. CI must not commit those files. No application runtime secrets are required.
 
-GitHub Pages caches every file for ten minutes and the setting cannot be changed, so a phone could pair a new page with an old script. The workflow runs `scripts/stamp-assets.py` on the build copy, which adds `?v=<content hash>` to each script, stylesheet and `catalog.json` address. Nothing stamped is committed. A new file that a page loads needs adding to the lists in that script.
+`scripts/stamp-assets.py` adds `?v=<content hash>` to each script, stylesheet and `catalog.json` address on the build copy, so a new page is not paired with an old script. Nothing stamped is committed. A new file that a page loads needs adding to the lists in that script.
 
 The earlier public chatgpt.site deployment remains a separate origin. Browser artwork does not automatically transfer between website addresses. Editable project files provide a local way to move drawings once downloaded from a version supporting them.
 
