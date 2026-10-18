@@ -142,6 +142,15 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     else ok('Layered project imports two editable layers');
     if(await page.locator('#layer-list .layer-visibility').first().getAttribute('aria-pressed')!=='false')fail(tag,'Project import lost hidden layer state');
     if(await page.locator('#layer-list input[type="range"]').first().inputValue()!=='45')fail(tag,'Project import lost layer opacity');
+    page.once('dialog',dialog=>dialog.accept('Highlights'));
+    await page.locator('#layer-list button[aria-label^="Rename "]').nth(1).click();
+    if(await page.locator('#layer-list [data-layer]').nth(1).textContent()!=='Highlights')fail(tag,'Layer rename failed');
+    await page.locator('#layer-list button[aria-label^="Move "][aria-label$=" down"]').nth(1).click();
+    if(await page.locator('#layer-list [data-layer]').first().textContent()!=='Highlights')fail(tag,'Layer reorder failed');
+    page.once('dialog',dialog=>dialog.accept());
+    await page.locator('#layer-list button[aria-label^="Delete "]').first().click();
+    if(await page.locator('#layer-list [data-layer]').count()!==1)fail(tag,'Layer deletion failed');
+    else ok('Rename, reorder and delete layer controls work');
   }
   await page.keyboard.press('Escape');
   if (openedRail && !await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed')))
