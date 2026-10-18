@@ -1,0 +1,25 @@
+# Netlify is the production host for chromalie.page.
+# Keep the site static; artwork is restored and SHA-256 checked at build time.
+[build]
+  command = "python3 scripts/import-assets.py && python3 scripts/stamp-assets.py dist"
+  publish = "dist"
+
+[build.environment]
+  PYTHONUNBUFFERED = "1"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "SAMEORIGIN"
