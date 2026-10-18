@@ -717,3 +717,5 @@ img,svg,video,canvas{max-width:100%}
 .layer-controls .layer-item button{padding:6px 8px}
 
 .recent-colours{margin:8px 0}.recent-colours strong{font-size:12px;font-weight:600}.recent-colours #recent-swatches{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.recent-colours #recent-swatches:empty{display:none}.recent-colours .swatch{flex:0 0 25px;width:25px;height:25px;border-radius:50%;border:1px solid #aab0a5}
+
+.colour-harmonies{margin:8px 0}.colour-harmonies strong{font-size:12px;font-weight:600}.colour-harmonies #harmony-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.colour-harmonies .swatch{flex:0 0 27px;width:27px;height:27px;border:1px solid #aab0a5;border-radius:50%}.colour-harmonies .swatch:focus-visible{outline:3px solid #2766d7;outline-offset:2px}
