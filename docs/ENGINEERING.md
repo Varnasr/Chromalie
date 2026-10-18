@@ -16,7 +16,7 @@ Chromalie is a static client-side website hosted on Netlify at https://chromalie
 
 The original line artwork is kept apart from the transparent painting canvas. Compositing paints onto white, then multiplies the original line artwork over it, preserving printed outlines and shading. Brush operations are drawn to temporary canvases and clipped to selected regions in automatic mode. Some media apply additional pixel processing before committing to the paint canvas.
 
-Chromalie supports up to five independent transparent paint layers. The active layer uses the editable paint canvas; inactive layers are held as canvas snapshots. Composition respects each layer's visibility and opacity. IndexedDB saves a merged preview, per-layer PNG blobs and layer metadata. Version 2 editable project exports contain each layer and its metadata; version 1 single-layer projects remain importable. Undo/redo currently stores snapshots for the active layer only, capped at ten changes, and history resets when switching layers. Layer reordering, deletion and persistent cross-layer undo history are not implemented. Keep the eraser preview, print/export composition, project import, autosave and responsive controls in sync when extending layers.
+Chromalie supports up to five independent transparent paint layers. The active layer uses the editable paint canvas; inactive layers are held as canvas snapshots. Composition respects each layer's visibility and opacity. IndexedDB saves a merged preview, per-layer PNG blobs and layer metadata. Version 2 editable project exports contain each layer and its metadata; version 1 single-layer projects remain importable. Undo/redo stores up to ten snapshots per layer during the open studio session; histories are not persisted between visits. Layer renaming, reordering and deletion are implemented. Undoing structural changes to the layer stack is not implemented. Keep the eraser preview, print/export composition, project import, autosave and responsive controls in sync when extending layers.
 
 ## Regions and stylus
 
@@ -47,5 +47,5 @@ A green Actions run means the build and tests passed. It does not by itself prov
 1. Preserve the existing visual identity, library IDs, credits and saved-work compatibility.
 2. Make a small, reviewable change; update relevant docs and tests.
 3. Test the painting workflow on phone and desktop widths, including failure and recovery paths.
-4. Avoid claiming native pigment physics, guaranteed offline access or full layers until implemented.
+4. Avoid claiming native pigment physics, guaranteed offline access or structural undo of layer changes.
 5. Verify deployment and accessibility before release sign-off.
