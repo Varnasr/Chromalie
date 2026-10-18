@@ -109,7 +109,12 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   await capture(page,`${tag}-studio`);
 
   // Layers must be available in both layouts and must survive a local save/reopen.
-  if(w<700){await page.click('[data-pop="more"]');}
+  // [data-pop="more"] matches the chip and the hidden strip. On a phone the chip
+  // sits in the collapsed tool rail, so open that rail and click the visible chip.
+  const layerRailToggle = page.locator('.m-rail-toggle');
+  const openedRail = w < 700 && await layerRailToggle.isVisible();
+  if (openedRail) await layerRailToggle.click();
+  await page.locator('.m-chip-btn[data-pop="more"]:visible').click();
   const addLayer=page.locator('#add-layer');
   if(!await addLayer.isVisible())fail(tag,'Add layer is not accessible in the current layout');
   else{
@@ -137,8 +142,10 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     else ok('Layered project imports two editable layers');
     if(await page.locator('#layer-list .layer-visibility').first().getAttribute('aria-pressed')!=='false')fail(tag,'Project import lost hidden layer state');
     if(await page.locator('#layer-list input[type="range"]').first().inputValue()!=='45')fail(tag,'Project import lost layer opacity');
-    if(w<700)await page.keyboard.press('Escape');
   }
+  await page.keyboard.press('Escape');
+  if (openedRail && !await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed')))
+    await layerRailToggle.click();
   // Brush samples must be actual, varied drawings rather than identical CSS pills.
   const samples = await page.evaluate(() => [...document.querySelectorAll('.brush-button canvas.brush-sample-canvas')].map(c => ({
     tool: c.closest('[data-tool]')?.dataset.tool,
@@ -200,7 +207,7 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   // Palette collections must be discoverable and usable inside the mobile
   // Colour strip as well as in the desktop workspace.
   await page.keyboard.press('Escape');
-  if (w < 700) await page.click('[data-pop="shade"]');
+  await page.locator('.m-chip-btn[data-pop="shade"]:visible').click();
   const paletteButtons=page.locator(w < 700 ? '.m-pop-shade [data-palette]' : '.palette-switcher [data-palette]');
   if(await paletteButtons.count()!==7)fail(tag,'Colour strip does not contain seven palette choices');
   else ok('all seven palettes are visible in the Colour strip');
@@ -417,14 +424,20 @@ for(const [w,h] of [[320,700],[430,932],[768,1024]]){
  await page.click('[data-m="fill"]');
  const box=await page.locator('#canvas').boundingBox();
  await page.mouse.click(box.x+box.width*.5,box.y+box.height*.42);
- await page.waitForTimeout(1500);
- if(!await page.locator('#retry-save').isVisible())fail(tag,'A failed save did not expose Retry save');
+ const retry=page.locator('#retry-save');
+ await retry.waitFor({state:'visible',timeout:10000}).catch(()=>{});
+ if(!await retry.isVisible())fail(tag,'A failed save did not expose Retry save');
  else ok('A failed IndexedDB write exposes Retry save');
+ await page.evaluate(()=>{const t=document.querySelector('#toast');if(t)t.textContent='';});
  await page.click('#exit-studio');
+ // Leave starts another save. Wait until that attempt has failed before restoring writes,
+ // otherwise the in-flight save can succeed and hide Retry save.
+ await page.waitForFunction(()=>(document.querySelector('#toast')?.textContent||'').includes('Saving failed'),null,{timeout:15000});
  if(await page.locator('#studio').isHidden())fail(tag,'A failed save allowed the painting to close');
  else ok('The unsaved painting remains open after a failed save');
+ if(!await retry.isVisible())fail(tag,'Retry save disappeared after a blocked exit');
  await page.evaluate(()=>window.__restoreArtworkWrites());
- await page.click('#retry-save');
+ await retry.click();
  await page.waitForFunction(()=>document.querySelector('#save-state').textContent==='Saved on this device',{timeout:10000});
  if(await page.locator('#retry-save').isVisible())fail(tag,'Retry save remained visible after recovery');
  else ok('Retry save recovers after storage becomes available');
