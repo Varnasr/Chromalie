@@ -708,3 +708,10 @@ img,svg,video,canvas{max-width:100%}
 .layer-controls .layer-item input[type="range"]{width:100%;min-width:0;accent-color:#50735c}
 .layer-controls .layer-item .layer-visibility[aria-pressed="false"]{opacity:.7;text-decoration:underline}
 @media(max-width:440px){.layer-controls .layer-item{grid-template-columns:minmax(75px,1fr) auto minmax(45px,70px)}}
+
+/* Compact, wrap-safe layer editor: controls remain usable at phone widths. */
+.layer-controls #layer-list{display:block}
+.layer-controls .layer-item{display:flex;flex-wrap:wrap;gap:5px;align-items:center;border-bottom:1px solid var(--line,#ddd);padding:6px 0}
+.layer-controls .layer-item button[data-layer]{flex:1 1 100px;min-width:70px;text-align:left}
+.layer-controls .layer-item input[type="range"]{flex:1 1 70px;max-width:110px}
+.layer-controls .layer-item button{padding:6px 8px}
