@@ -155,6 +155,8 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   await page.keyboard.press('Escape');
   if (openedRail && !await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed')))
     await layerRailToggle.click();
+  // The colour panel is initially collapsed on mobile; open it for palette checks.
+  if(w<700)await page.locator('.m-chip-btn[data-pop="colours"]:visible').click();
   // Colour harmony suggestions are derived from the selected colour.
   const harmonies=page.locator('#harmony-swatches button');
   if(await harmonies.count()!==5)fail(tag,'Expected five harmony colour suggestions');
