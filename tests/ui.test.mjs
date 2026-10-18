@@ -137,7 +137,7 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     if(project.version!==2||project.layers?.length!==2||project.layers[0]?.visible!==false||project.layers[0]?.opacity!==0.45||!project.layers.every(l=>l.paint.startsWith('data:image/png;base64,')))fail(tag,'Layered project export is incomplete');
     else ok('Layered project exports both independent paint surfaces');
     await page.locator('#project-file').setInputFiles({name:'layer-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
-    await page.waitForFunction(()=>document.querySelectorAll('#layer-list [data-layer]').length===2,null,{timeout:15000});
+    await page.waitForFunction(()=>document.querySelector('#layer-list .layer-visibility')?.getAttribute('aria-pressed')==='false' && document.querySelector('#layer-list input[type="range"]')?.value==='45',null,{timeout:15000});
     if(await page.locator('#layer-list [data-layer]').count()!==2)fail(tag,'Layered project import lost layers');
     else ok('Layered project imports two editable layers');
     if(await page.locator('#layer-list .layer-visibility').first().getAttribute('aria-pressed')!=='false')fail(tag,'Project import lost hidden layer state');
