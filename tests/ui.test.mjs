@@ -121,15 +121,22 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     await layers.nth(0).click();
     if(await layers.nth(0).getAttribute('aria-pressed')!=='true')fail(tag,'Switching to the first layer failed');
     await layers.nth(1).click();
+    const visibility=page.locator('#layer-list .layer-visibility').nth(0);
+    await visibility.click();
+    if(await visibility.getAttribute('aria-pressed')!=='false')fail(tag,'Layer visibility did not switch off');
+    const opacityControl=page.locator('#layer-list input[type="range"]').nth(0);
+    await opacityControl.fill('45');
     // A layered project must export its individual layers and remain importable.
     const [download]=await Promise.all([page.waitForEvent('download'),page.click('#save-project')]);
     const project=JSON.parse(await (await import('node:fs/promises')).readFile(await download.path(),'utf8'));
-    if(project.version!==2||project.layers?.length!==2||!project.layers.every(l=>l.paint.startsWith('data:image/png;base64,')))fail(tag,'Layered project export is incomplete');
+    if(project.version!==2||project.layers?.length!==2||project.layers[0]?.visible!==false||project.layers[0]?.opacity!==0.45||!project.layers.every(l=>l.paint.startsWith('data:image/png;base64,')))fail(tag,'Layered project export is incomplete');
     else ok('Layered project exports both independent paint surfaces');
     await page.locator('#project-file').setInputFiles({name:'layer-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
     await page.waitForFunction(()=>document.querySelectorAll('#layer-list [data-layer]').length===2,null,{timeout:15000});
     if(await page.locator('#layer-list [data-layer]').count()!==2)fail(tag,'Layered project import lost layers');
     else ok('Layered project imports two editable layers');
+    if(await page.locator('#layer-list .layer-visibility').first().getAttribute('aria-pressed')!=='false')fail(tag,'Project import lost hidden layer state');
+    if(await page.locator('#layer-list input[type="range"]').first().inputValue()!=='45')fail(tag,'Project import lost layer opacity');
     if(w<700)await page.keyboard.press('Escape');
   }
   // Brush samples must be actual, varied drawings rather than identical CSS pills.
