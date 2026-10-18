@@ -145,7 +145,7 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     page.once('dialog',dialog=>dialog.accept('Highlights'));
     await page.locator('#layer-list button[aria-label^="Rename "]').nth(1).click();
     if(await page.locator('#layer-list [data-layer]').nth(1).textContent()!=='Highlights')fail(tag,'Layer rename failed');
-    await page.locator('#layer-list button[aria-label^="Move "][aria-label$=" down"]').nth(1).click();
+    await page.locator('#layer-list button[aria-label="Move Highlights down"]').click();
     if(await page.locator('#layer-list [data-layer]').first().textContent()!=='Highlights')fail(tag,'Layer reorder failed');
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('#layer-list button[aria-label^="Delete "]').first().click();
