@@ -18,6 +18,14 @@ The original line artwork is kept apart from the transparent painting canvas. Co
 
 Chromalie supports up to five independent transparent paint layers. The active layer uses the editable paint canvas; inactive layers are held as canvas snapshots. Composition respects each layer's visibility and opacity. IndexedDB saves a merged preview, per-layer PNG blobs and layer metadata. Version 2 editable project exports contain each layer and its metadata; version 1 single-layer projects remain importable. Undo/redo stores up to ten snapshots per layer during the open studio session; histories are not persisted between visits. Layer renaming, reordering and deletion are implemented. Undoing structural changes to the layer stack is not implemented. Keep the eraser preview, print/export composition, project import, autosave and responsive controls in sync when extending layers.
 
+## Colour tools
+
+Built-in palettes and the custom palette are rendered by `renderColours()` in `dist/app.js`. The native HTML colour input selects arbitrary colours. `renderHarmonyColours()` derives analogous, complementary and triadic suggestions from the selected colour in HSL space; these are suggestions, not perceptually uniform or accessibility-checked combinations. Recent colours are limited to eight selections in memory per session. Custom palette additions and removals are saved in IndexedDB when local storage is enabled. Do not present recent colours as cross-session history.
+
+## Netlify deployment
+
+`netlify.toml` is the production build source of truth: the build restores checksum-approved artwork, stamps asset references and publishes `dist/`. The GitHub Actions workflow performs independent checks and uploads responsive screenshots but does not deploy the site. Because the two systems run separately, a green Netlify deployment does not establish that GitHub Actions tests passed. Confirm both and inspect the live result.
+
 ## Regions and stylus
 
 Region analysis occurs asynchronously. Shapes are derived from artwork pixels; faint boundaries, gaps, large background areas and scanned artefacts can affect segmentation. Gap closing is adjustable, but should be regression-tested with intricate pages.
