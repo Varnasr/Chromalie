@@ -16,7 +16,7 @@ Chromalie is a static client-side website deployed through GitHub Pages at https
 
 The original line artwork is kept apart from the transparent painting canvas. Compositing paints onto white, then multiplies the original line artwork over it, preserving printed outlines and shading. Brush operations are drawn to temporary canvases and clipped to selected regions in automatic mode. Some media apply additional pixel processing before committing to the paint canvas.
 
-Undo/redo currently stores paint-canvas image snapshots, capped at ten changes. Introducing independent layers requires revisiting snapshot history, composition, export and persistence together. Do not treat the existing single paint canvas as a fully implemented layer system.
+Chromalie supports up to five independent transparent paint layers. The active layer uses the editable paint canvas; inactive layers are held as canvas snapshots. Composition respects each layer's visibility and opacity. IndexedDB saves a merged preview, per-layer PNG blobs and layer metadata. Version 2 editable project exports contain each layer and its metadata; version 1 single-layer projects remain importable. Undo/redo currently stores snapshots for the active layer only, capped at ten changes, and history resets when switching layers. Layer reordering, deletion and persistent cross-layer undo history are not implemented. Keep the eraser preview, print/export composition, project import, autosave and responsive controls in sync when extending layers.
 
 ## Regions and stylus
 
