@@ -155,6 +155,14 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   await page.keyboard.press('Escape');
   if (openedRail && !await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed')))
     await layerRailToggle.click();
+  // Colour harmony suggestions are derived from the selected colour.
+  const harmonies=page.locator('#harmony-swatches button');
+  if(await harmonies.count()!==5)fail(tag,'Expected five harmony colour suggestions');
+  else{
+    await harmonies.nth(2).click();
+    if(!/^#[0-9a-f]{6}$/i.test(await page.locator('#custom-colour').inputValue()))fail(tag,'Harmony colour was not selected');
+    else ok('Colour harmonies select a valid custom colour');
+  }
   // Brush samples must be actual, varied drawings rather than identical CSS pills.
   const samples = await page.evaluate(() => [...document.querySelectorAll('.brush-button canvas.brush-sample-canvas')].map(c => ({
     tool: c.closest('[data-tool]')?.dataset.tool,
