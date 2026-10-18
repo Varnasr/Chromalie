@@ -19,21 +19,35 @@ function snapshotPaint(){const c=document.createElement('canvas');c.width=paint.
 function syncLayer(){if(paintLayers[activeLayer])paintLayers[activeLayer].canvas=snapshotPaint();}
 function compositeLayers(target){const c=target.getContext('2d');for(let i=0;i<paintLayers.length;i++){const layer=paintLayers[i];if(layer.visible===false)continue;c.save();c.globalAlpha=layer.opacity??1;c.drawImage(i===activeLayer?paint:layer.canvas,0,0,target.width,target.height);c.restore();}}
 function mergedPaint(){const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;compositeLayers(c);return c;}
+function switchLayer(i){
+ if(i===activeLayer)return;
+ finishStroke();syncLayer();paintLayers[activeLayer].undo=undoStack;paintLayers[activeLayer].redo=redoStack;
+ activeLayer=i;pc.clearRect(0,0,paint.width,paint.height);pc.drawImage(paintLayers[i].canvas,0,0);
+ undoStack=paintLayers[i].undo||[];redoStack=paintLayers[i].redo||[];
+ updateHistory();drawLayerControls();render();
+}
 function drawLayerControls(){
  const root=$('layer-list');root.replaceChildren();
  paintLayers.forEach((layer,i)=>{
   const item=document.createElement('div');item.className='layer-item';
-  const select=document.createElement('button');select.type='button';select.textContent=layer.name;select.dataset.layer=String(i);select.setAttribute('aria-pressed',String(i===activeLayer));
-  select.onclick=()=>{if(i===activeLayer)return;finishStroke();syncLayer();activeLayer=i;pc.clearRect(0,0,paint.width,paint.height);pc.drawImage(layer.canvas,0,0);undoStack=[];redoStack=[];updateHistory();drawLayerControls();render();};
+  const select=document.createElement('button');select.type='button';select.textContent=layer.name;select.dataset.layer=String(i);select.setAttribute('aria-pressed',String(i===activeLayer));select.onclick=()=>switchLayer(i);
   const visible=document.createElement('button');visible.type='button';visible.className='layer-visibility';visible.textContent=layer.visible===false?'Show':'Hide';visible.setAttribute('aria-label',(layer.visible===false?'Show ':'Hide ')+layer.name);visible.setAttribute('aria-pressed',String(layer.visible!==false));
   visible.onclick=()=>{finishStroke();layer.visible=layer.visible===false;drawLayerControls();render();scheduleSave();};
   const opacity=document.createElement('input');opacity.type='range';opacity.min='0';opacity.max='100';opacity.step='5';opacity.value=String(Math.round((layer.opacity??1)*100));opacity.setAttribute('aria-label',layer.name+' opacity');opacity.title=layer.name+' opacity';
   opacity.oninput=()=>{finishStroke();layer.opacity=Number(opacity.value)/100;render();scheduleSave();};
-  item.append(select,visible,opacity);root.append(item);
+  const rename=document.createElement('button');rename.type='button';rename.textContent='Rename';rename.setAttribute('aria-label','Rename '+layer.name);
+  rename.onclick=()=>{const name=prompt('Layer name',layer.name);if(name===null)return;const clean=name.trim().slice(0,40);if(!clean)return;layer.name=clean;drawLayerControls();scheduleSave();};
+  const up=document.createElement('button');up.type='button';up.textContent='↑';up.setAttribute('aria-label','Move '+layer.name+' up');up.disabled=i===paintLayers.length-1;
+  up.onclick=()=>{finishStroke();syncLayer();[paintLayers[i],paintLayers[i+1]]=[paintLayers[i+1],paintLayers[i]];if(activeLayer===i)activeLayer=i+1;else if(activeLayer===i+1)activeLayer=i;drawLayerControls();render();scheduleSave();};
+  const down=document.createElement('button');down.type='button';down.textContent='↓';down.setAttribute('aria-label','Move '+layer.name+' down');down.disabled=i===0;
+  down.onclick=()=>{finishStroke();syncLayer();[paintLayers[i],paintLayers[i-1]]=[paintLayers[i-1],paintLayers[i]];if(activeLayer===i)activeLayer=i-1;else if(activeLayer===i-1)activeLayer=i;drawLayerControls();render();scheduleSave();};
+  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete '+layer.name);remove.disabled=paintLayers.length===1;
+  remove.onclick=()=>{if(!confirm('Delete '+layer.name+'? This removes its painting.'))return;finishStroke();syncLayer();paintLayers.splice(i,1);if(activeLayer===i){activeLayer=Math.min(i,paintLayers.length-1);pc.clearRect(0,0,paint.width,paint.height);pc.drawImage(paintLayers[activeLayer].canvas,0,0);undoStack=paintLayers[activeLayer].undo||[];redoStack=paintLayers[activeLayer].redo||[];updateHistory();}else if(activeLayer>i)activeLayer--;drawLayerControls();render();scheduleSave();};
+  item.append(select,visible,opacity,rename,up,down,remove);root.append(item);
  });$('add-layer').disabled=paintLayers.length>=5;
 }
 function resetLayers(){paintLayers=[{name:'Layer 1',canvas:snapshotPaint(),visible:true,opacity:1}];activeLayer=0;drawLayerControls();}
-$('add-layer').onclick=()=>{if(!current||paintLayers.length>=5)return;finishStroke();syncLayer();const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;paintLayers.push({name:'Layer '+(paintLayers.length+1),canvas:c,visible:true,opacity:1});activeLayer=paintLayers.length-1;pc.clearRect(0,0,paint.width,paint.height);undoStack=[];redoStack=[];updateHistory();drawLayerControls();render();scheduleSave();};
+$('add-layer').onclick=()=>{if(!current||paintLayers.length>=5)return;finishStroke();syncLayer();paintLayers[activeLayer].undo=undoStack;paintLayers[activeLayer].redo=redoStack;const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;paintLayers.push({name:'Layer '+(paintLayers.length+1),canvas:c,visible:true,opacity:1,undo:[],redo:[]});activeLayer=paintLayers.length-1;pc.clearRect(0,0,paint.width,paint.height);undoStack=[];redoStack=[];updateHistory();drawLayerControls();render();scheduleSave();};
 let undoStack=[],redoStack=[],strokeActive=false,lastPoint=null,strokeMask=false,selected=new Set(),strokeBefore=null,tip=null,stampCounter=0,changed=0,saveTimer,saveChain=Promise.resolve(),zoom=1,panX=0,panY=0,fitWidth=400,fitHeight=550;
 let points=new Map(),gesture=null,panStart=null,dirty=false,toastTimer,activePointer=null,pendingTap=null;
 let mediumLevels={oil:50,gouache:50,'coloured-pencil':50,watercolour:50},smoothing=.2,lastSmudgePoint=null,smudgeTip=null,smudgeBuffer=null;
@@ -545,7 +559,7 @@ async function openPage(p){
  try{
   const img=new Image();img.src=p.image;await img.decode();if(mine!==epoch)return;ic.fillStyle='white';ic.fillRect(0,0,ink.width,ink.height);ic.drawImage(img,0,0);pc.clearRect(0,0,paint.width,paint.height);resetLayers();
   const entry=await dbGet('artwork',p.id);if(mine!==epoch)return;
-  if(entry?.blob){if(Array.isArray(entry.layers)&&entry.layers.length>0&&entry.layers.length<=5){paintLayers=[];for(const blob of entry.layers){const bitmap=await createImageBitmap(blob);const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;c.getContext('2d').drawImage(bitmap,0,0);bitmap.close();paintLayers.push({name:'Layer '+(paintLayers.length+1),canvas:c,visible:entry.layerMeta?.[paintLayers.length]?.visible!==false,opacity:entry.layerMeta?.[paintLayers.length]?.opacity??1});}activeLayer=paintLayers.length-1;pc.drawImage(paintLayers[activeLayer].canvas,0,0);drawLayerControls();}else{const bitmap=await createImageBitmap(entry.blob);if(mine!==epoch){bitmap.close();return;}pc.drawImage(bitmap,0,0);bitmap.close();resetLayers();}$('save-state').textContent=storageEnabled?'Saved on this device':'Device saving is off. Download to keep.';}
+  if(entry?.blob){if(Array.isArray(entry.layers)&&entry.layers.length>0&&entry.layers.length<=5){paintLayers=[];for(const blob of entry.layers){const bitmap=await createImageBitmap(blob);const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;c.getContext('2d').drawImage(bitmap,0,0);bitmap.close();paintLayers.push({name:entry.layerMeta?.[paintLayers.length]?.name||'Layer '+(paintLayers.length+1),canvas:c,visible:entry.layerMeta?.[paintLayers.length]?.visible!==false,opacity:entry.layerMeta?.[paintLayers.length]?.opacity??1});}activeLayer=paintLayers.length-1;pc.drawImage(paintLayers[activeLayer].canvas,0,0);drawLayerControls();}else{const bitmap=await createImageBitmap(entry.blob);if(mine!==epoch){bitmap.close();return;}pc.drawImage(bitmap,0,0);bitmap.close();resetLayers();}$('save-state').textContent=storageEnabled?'Saved on this device':'Device saving is off. Download to keep.';}
   render();prepareRegions();$('exit-studio').focus({preventScroll:true});
  }catch(e){if(mine!==epoch)return;$('loading').hidden=true;toast('This page could not open. Please try another page.');await exitStudio();}
 }
@@ -645,7 +659,7 @@ $('project-file').onchange=async e=>{
    }
    await openPage(page);
    if(current?.id!==page.id)return;
-   paintLayers=bitmaps.map((bitmap,i)=>{const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;c.getContext('2d').drawImage(bitmap,0,0);return {name:'Layer '+(i+1),canvas:c,visible:entries[i].visible!==false,opacity:typeof entries[i].opacity==='number'&&entries[i].opacity>=0&&entries[i].opacity<=1?entries[i].opacity:1};});
+   paintLayers=bitmaps.map((bitmap,i)=>{const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;c.getContext('2d').drawImage(bitmap,0,0);return {name:typeof entries[i].name==='string'&&entries[i].name.trim()?entries[i].name.slice(0,40):'Layer '+(i+1),canvas:c,visible:entries[i].visible!==false,opacity:typeof entries[i].opacity==='number'&&entries[i].opacity>=0&&entries[i].opacity<=1?entries[i].opacity:1};});
    activeLayer=paintLayers.length-1;pc.clearRect(0,0,paint.width,paint.height);pc.drawImage(paintLayers[activeLayer].canvas,0,0);
    undoStack=[];redoStack=[];updateHistory();drawLayerControls();render();scheduleSave();toast('Editable project restored.');
   }finally{bitmaps.forEach(bitmap=>bitmap.close());}
