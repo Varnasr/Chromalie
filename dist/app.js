@@ -107,7 +107,19 @@ function renderColours(){const selectedPalette=$('palette-select').value;documen
 const recentColours=[];
 function renderRecentColours(){const root=$('recent-swatches');if(!root)return;root.replaceChildren();for(const c of recentColours){const b=document.createElement('button');b.type='button';b.className='swatch';b.style.background=c;b.title=c;b.setAttribute('aria-label','Choose recent colour '+c);b.onclick=()=>setColour(c);root.append(b);}}
 function setColour(c){baseColour=c;$('shade').value=0;colour=c;$('custom-colour').value=c;if(recentColours.includes(c))recentColours.splice(recentColours.indexOf(c),1);recentColours.unshift(c);if(recentColours.length>8)recentColours.pop();renderRecentColours();updateColour();}
-function updateColour(){colour=shadeColour(baseColour,Number($('shade').value));$('current-colour').style.background=colour;$('current-colour').title=colour;tip=null;renderColours();updateBrushPreview();}
+function renderHarmonyColours(){
+ const root=$('harmony-swatches');if(!root||!/^#[0-9a-f]{6}$/i.test(baseColour))return;
+ const r=parseInt(baseColour.slice(1,3),16)/255,g=parseInt(baseColour.slice(3,5),16)/255,b=parseInt(baseColour.slice(5,7),16)/255;
+ const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;let h=0;
+ if(delta){if(max===r)h=((g-b)/delta)%6;else if(max===g)h=(b-r)/delta+2;else h=(r-g)/delta+4;h=(h*60+360)%360;}
+ const light=(max+min)/2,sat=delta===0?0:delta/(1-Math.abs(2*light-1));
+ const hslHex=(angle)=>{const hue=(angle+360)%360;const chroma=(1-Math.abs(2*light-1))*sat;const x=chroma*(1-Math.abs((hue/60)%2-1)),m=light-chroma/2;let rgb=hue<60?[chroma,x,0]:hue<120?[x,chroma,0]:hue<180?[0,chroma,x]:hue<240?[0,x,chroma]:hue<300?[x,0,chroma]:[chroma,0,x];return '#'+rgb.map(v=>Math.round((v+m)*255).toString(16).padStart(2,'0')).join('');};
+ root.replaceChildren();
+ for(const [label,angle] of [['Neighbour −30°',h-30],['Neighbour +30°',h+30],['Complement',h+180],['Triad +120°',h+120],['Triad −120°',h-120]]){
+  const c=hslHex(angle),button=document.createElement('button');button.type='button';button.className='swatch';button.style.background=c;button.title=label+' · '+c;button.setAttribute('aria-label',label+' '+c);button.onclick=()=>setColour(c);root.append(button);
+ }
+}
+function updateColour(){colour=shadeColour(baseColour,Number($('shade').value));$('current-colour').style.background=colour;$('current-colour').title=colour;tip=null;renderColours();renderHarmonyColours();updateBrushPreview();}
 async function choosePalette(name){if(name!=='custom'&&!Object.hasOwn(palettes,name))return;$('palette-select').value=name;renderColours();if(storageEnabled&&db)try{await dbPut('settings',name,'selected-palette');}catch(e){/* The palette still works for this session. */}}$('palette-select').onchange=e=>choosePalette(e.target.value);document.querySelectorAll('[data-palette]').forEach(b=>b.addEventListener('click',()=>choosePalette(b.dataset.palette)));$('custom-colour').oninput=e=>setColour(e.target.value);$('shade').oninput=updateColour;
 $('add-colour').onclick=async()=>{if(!customPalette.includes(colour))customPalette.push(colour);if(customPalette.length>60)customPalette.shift();choosePalette('custom');if(!storageEnabled){toast('Colour added for this session. Device saving is off.');return;}try{await dbPut('settings',customPalette,'palette');toast('Colour added to your palette.');}catch(e){toast('Palette is available for this session.');}};
 $('brush-size').oninput=e=>{finishStroke();size=+e.target.value;$('size-value').textContent=size;tip=null;updateBrushPreview();};$('opacity').oninput=e=>{finishStroke();opacity=+e.target.value/100;$('opacity-value').textContent=`${e.target.value}%`;updateBrushPreview();};
