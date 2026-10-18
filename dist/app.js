@@ -105,6 +105,8 @@ $('about-button').onclick=()=>showInfo('Your work, on your device','<p>Your page
 
 function renderColours(){const selectedPalette=$('palette-select').value;document.querySelectorAll('[data-palette]').forEach(b=>{const active=b.dataset.palette===selectedPalette;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});const list=selectedPalette==='custom'?customPalette:palettes[selectedPalette];$('swatches').replaceChildren();if(!list.length){const p=document.createElement('span');p.textContent='Add your first colour below.';p.style.cssText='grid-column:1/-1;font-size:10px;color:#72786d';$('swatches').append(p);}for(const c of list){const b=document.createElement('button');b.className='swatch';b.style.background=c;b.classList.toggle('active',c.toLowerCase()===baseColour.toLowerCase());b.setAttribute('aria-label',`Choose colour ${c}`);b.title=c;b.onclick=()=>setColour(c);$('swatches').append(b);}}
 const recentColours=[];
+// Colour suggestions are purely local; no painting or palette data leaves the device.
+
 function renderRecentColours(){const root=$('recent-swatches');if(!root)return;root.replaceChildren();for(const c of recentColours){const b=document.createElement('button');b.type='button';b.className='swatch';b.style.background=c;b.title=c;b.setAttribute('aria-label','Choose recent colour '+c);b.onclick=()=>setColour(c);root.append(b);}}
 function setColour(c){baseColour=c;$('shade').value=0;colour=c;$('custom-colour').value=c;if(recentColours.includes(c))recentColours.splice(recentColours.indexOf(c),1);recentColours.unshift(c);if(recentColours.length>8)recentColours.pop();renderRecentColours();updateColour();}
 function renderHarmonyColours(){
