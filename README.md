@@ -9,7 +9,7 @@ Live at https://chromalie.page
 - [User guide](docs/USER-GUIDE.md): painting tools, palettes, local saving, downloads and troubleshooting.
 - [Engineering guide](docs/ENGINEERING.md): canvas architecture, region processing, storage, asset imports, tests and releases.
 
-Documentation describes the current implementation. Planned features such as independent painting layers and replay are not presented as shipped.
+Documentation describes the current implementation. Painting layers are implemented; replay remains outside the current release.
 
 
 A static, free colouring studio run by StoryWell Books. The art is colouring books that StoryWell Books bought: eight with private label rights (PLR), and two sets of Indian pages. StoryWell's own art will be added over time.
@@ -24,7 +24,7 @@ A commit is **not** a finished feature or a verified public release. Every devel
 
 1. The colouring-engine tests, browser interaction tests, responsive checks and accessibility audit pass in GitHub Actions (`Publish Chromalie` on pushes to `main` and on pull requests).
 2. Netlify site `chromalie` finishes publishing that commit from `main`. The public site does not serve `/version.json`; do not treat a missing version file as a failed release.
-3. The public homepage and core painting assets (`app.js`, `engine.js`, `mobile.js`, `journal.js`, `style.css`) return valid content from `chromalie.page`.
+3. The Netlify-hosted public homepage and core painting assets (`app.js`, `engine.js`, `mobile.js`, `journal.js`, `style.css`) return valid content from `chromalie.page`.
 4. For visible UI changes, inspect the phone and desktop screenshots uploaded as the `chromalie-responsive-screenshots` workflow artifact. Browser screenshots are regression evidence, not a substitute for checking on a real touch device.
 5. Record unverified device-specific behaviours (stylus pressure, palm rejection, printing, sharing and storage recovery) explicitly rather than describing them as finished.
 
