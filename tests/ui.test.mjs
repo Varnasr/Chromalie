@@ -125,7 +125,7 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     await visibility.click();
     if(await visibility.getAttribute('aria-pressed')!=='false')fail(tag,'Layer visibility did not switch off');
     const opacityControl=page.locator('#layer-list input[type="range"]').nth(0);
-    await opacityControl.fill('45');
+    await opacityControl.evaluate(el=>{el.value='45';el.dispatchEvent(new Event('input',{bubbles:true}));});
     // A layered project must export its individual layers and remain importable.
     const [download]=await Promise.all([page.waitForEvent('download'),page.click('#save-project')]);
     const project=JSON.parse(await (await import('node:fs/promises')).readFile(await download.path(),'utf8'));
