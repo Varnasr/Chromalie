@@ -6,6 +6,8 @@ Live at https://chromalie.page
 
 ## Documentation
 
+- [Feature status and roadmap](docs/ROADMAP.md): shipped, verification needed and planned work.
+- [Contributing](CONTRIBUTING.md): development workflow, testing and pull requests.
 - [User guide](docs/USER-GUIDE.md): painting tools, palettes, local saving, downloads and troubleshooting.
 - [Engineering guide](docs/ENGINEERING.md): canvas architecture, region processing, storage, asset imports, tests and releases.
 
@@ -32,7 +34,7 @@ A commit is **not** a finished feature or a verified public release. Every devel
 
 ## Studio
 
-Solid and gradient fill; pencil, marker, paint, watercolour, pastel, airbrush and glitter brushes; freehand painting; per-stroke area clipping; multi-area selection; eraser; eyedropper; brush size and opacity; shade slider; five palettes and a saved custom palette; pinch zoom, pan, undo and redo; PNG download and print.
+Solid and gradient fill; pencil, marker, paint, watercolour, pastel, airbrush and glitter brushes; freehand painting; per-stroke area clipping; multi-area selection; eraser; eyedropper; brush size and opacity; shade slider; six built-in palettes and a saved custom palette, colour harmony suggestions and recent colours; pinch zoom, pan, per-layer undo and redo, up to five editable layers with visibility, opacity, rename, reorder and delete controls; PNG download, editable project export and print.
 
 The brushes approximate traditional media using canvas stamps. They do not simulate physical pigment mixing or reproduce Pigment's native brush engine. Pressure input uses the browser's Pointer Events when the stylus reports it.
 
@@ -40,7 +42,7 @@ Paint remains separate from original artwork. Final images multiply the original
 
 Progress and palettes use IndexedDB on the visitor's device. No account, server upload, community gallery, or payment service is present; the only thing sent anywhere is the anonymous daily counts described below. Device saving can be disabled and saved work cleared through the storage settings. Editable project files can be downloaded and reopened locally. Clearing browser data can remove work. Undo history is limited to ten changes while a page is open; it is not stored between sessions.
 
-The catalogue is a prepared snapshot. Changes in Drive require a new extraction and deployment. Source PDFs are not shipped to visitors. The extraction script expects the downloaded books in its declared scratch input directory; change that path for future imports.
+Layer undo history is kept separately for each layer during the open session; renaming, moving and deleting layers are not themselves undoable.\n\nThe catalogue is a prepared snapshot. Changes in Drive require a new extraction and deployment. Source PDFs are not shipped to visitors. The production build restores approved artwork from the checksum manifest; new assets require a deliberate manifest update and rights review.
 
 A protected Chromalie footer appears under every studio sheet and library thumbnail. PNG exports and printouts append a canvas-rendered wordmark and the collection/page title. Source artwork and saved paint layers retain their original dimensions.
 
