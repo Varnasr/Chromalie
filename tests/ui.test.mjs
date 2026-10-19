@@ -144,6 +144,12 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     await page.evaluate(()=>{document.getElementById('toast').textContent='';});
     await page.locator('#project-file').setInputFiles({name:'layer-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
     await page.waitForFunction(()=>document.getElementById('toast')?.textContent==='Editable project restored.' && document.querySelector('#layer-list .layer-visibility')?.getAttribute('aria-pressed')==='false' && document.querySelector('#layer-list input[type="range"]')?.value==='45',null,{timeout:15000});
+    // The toast has done its job as the signal. Left alone it fades out 3.5s
+    // later, and an axe audit that lands in its 0.2s fade measures half-
+    // transparent text and reports a contrast failure that no reader sees
+    // (CI, 2026-10-19). Dismiss it, as a reader's next action would.
+    await page.evaluate(()=>{const t=document.getElementById('toast');t.classList.remove('show');t.textContent='';});
+    await page.waitForTimeout(250);
     if(await page.locator('#layer-list [data-layer]').count()!==2)fail(tag,'Layered project import lost layers');
     else ok('Layered project imports two editable layers');
     if(await page.locator('#layer-list .layer-visibility').first().getAttribute('aria-pressed')!=='false')fail(tag,'Project import lost hidden layer state');
