@@ -134,6 +134,9 @@ function renderHarmonyColours(){
 function updateColour(){colour=shadeColour(baseColour,Number($('shade').value));$('current-colour').style.background=colour;$('current-colour').title=colour;tip=null;renderColours();renderHarmonyColours();updateBrushPreview();}
 async function choosePalette(name){if(name!=='custom'&&!Object.hasOwn(palettes,name))return;$('palette-select').value=name;renderColours();if(storageEnabled&&db)try{await dbPut('settings',name,'selected-palette');}catch(e){/* The palette still works for this session. */}}$('palette-select').onchange=e=>choosePalette(e.target.value);document.querySelectorAll('[data-palette]').forEach(b=>b.addEventListener('click',()=>choosePalette(b.dataset.palette)));$('remove-colour').onclick=async()=>{if($('palette-select').value!=='custom')return;const index=customPalette.indexOf(baseColour);if(index<0)return;customPalette.splice(index,1);renderColours();if(storageEnabled&&db)try{await dbPut('settings',customPalette,'palette');toast('Colour removed from My palette.');}catch(e){toast('Palette change is available for this session only.');}};
 $('custom-colour').oninput=e=>setColour(e.target.value);$('shade').oninput=updateColour;
+// Draw the suggestions for the starting colour too; until now they appeared only
+// after a colour was picked, so the panel opened empty.
+renderHarmonyColours();
 $('add-colour').onclick=async()=>{if(!customPalette.includes(colour))customPalette.push(colour);if(customPalette.length>60)customPalette.shift();choosePalette('custom');if(!storageEnabled){toast('Colour added for this session. Device saving is off.');return;}try{await dbPut('settings',customPalette,'palette');toast('Colour added to your palette.');}catch(e){toast('Palette is available for this session.');}};
 $('brush-size').oninput=e=>{finishStroke();size=+e.target.value;$('size-value').textContent=size;tip=null;updateBrushPreview();};$('opacity').oninput=e=>{finishStroke();opacity=+e.target.value/100;$('opacity-value').textContent=`${e.target.value}%`;updateBrushPreview();};
 $('smoothing').oninput=e=>{smoothing=+e.target.value/100;$('smoothing-value').textContent=`${e.target.value}%`;};
@@ -712,7 +715,7 @@ $('dismiss-storage').onclick=()=>{$('storage-notice').hidden=true;try{localStora
 window.addEventListener('hashchange',()=>{if(location.hash==='#storage'&&!$('storage-dialog').open)openStorage();});
 async function init(){
  try{db=await openDB();await loadSaved();}catch(e){toast('Device saving is unavailable. You can still colour and download.');}
- renderColours();renderHarmonyColours();updateTools();
+ renderColours();updateTools();
  try{$('storage-notice').hidden=localStorage.getItem('chromalie-storage-notice')==='seen';}catch(e){$('storage-notice').hidden=false;}if(location.hash==='#storage')openStorage();
  try{const response=await fetch('catalog.json');if(!response.ok)throw Error('catalog');catalog=applyCollectionNames(await response.json());catalog.pages.sort((a,b)=>a.number-b.number||catalog.books.findIndex(p=>p.id===a.book)-catalog.books.findIndex(p=>p.id===b.book));
   $('page-count').textContent=`${catalog.pages.length} pages · ${catalog.books.length} collections`;

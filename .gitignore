@@ -7,4 +7,6 @@ books/
 *.tar.gz
 *.zip
 __pycache__/
+
+# Screenshots written by tests/ui.test.mjs; CI uploads them as an artifact.
 test-artifacts/
