@@ -104,7 +104,11 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
       let found = false;
       for (let i = 0; i < 6 && !found; i++) {
         found = /Open the tools/.test(await page.locator('.guide-card').innerText());
-        if (!found) await page.locator('.guide-card button', { hasText: 'Next' }).click();
+        if (!found) {
+          const next = page.locator('.guide-card button', { hasText: 'Next' });
+          if (!await next.count()) break;
+          await next.click();
+        }
         await page.waitForTimeout(300);
       }
       if (!found) fail(tag, 'the phone tour never tells the reader how to open the tools'); else ok('the phone tour explains how to open the tools');

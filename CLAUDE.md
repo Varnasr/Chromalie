@@ -22,3 +22,22 @@ node tests/ui.test.mjs                    # browser test, needs playwright-core 
 
 The artwork's licences (PLR packs, Monkey Pen, Twinkl) are recorded per page in
 `credit`. Do not add art without its licence recorded the same way.
+
+## Deploys and counts
+
+The live deploy of the Netlify site `chromalie` has been locked since
+19 October 2026, so a merge to `main` builds and does not go live. The
+"Publish locked sites" workflow in Democracy-by-Design publishes the newest
+finished build of every locked site, nominally at 07:47 and 19:47 IST; its runs
+have started later than that, so run it by hand with `site = chromalie` to
+publish at a time you choose. Batch the day's work into one merge and one
+publish. Check the deploy list in Netlify, not only the CI run, before saying
+a change is live.
+
+`dist/count.js` adds one to a daily tally in Supabase through the function
+`chromalie_track` (kinds: visit, open, download, print, share, journal, pdf,
+install). It sends nothing else, nothing from localhost or automated browsers,
+and nothing when Do Not Track or Global Privacy Control is on. A new counted
+event needs a new kind in that function and a change to `scripts/build-legal.py`
+in the same commit, because the privacy and cookies pages list what is counted.
+The publishable key in `count.js` is public by design.
