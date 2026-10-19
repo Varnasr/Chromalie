@@ -287,7 +287,15 @@ function toggle(name) {
   pop.hidden = false;
   quick.querySelector(`.m-chip-btn[data-pop="${name}"]`).setAttribute('aria-expanded', 'true');
 }
-for (const b of chips) b.onclick = () => toggle(b.dataset.pop);
+// A keyboard press on a chip produces a click with detail 0 (a mouse or touch tap has
+// detail 1 or more). Only then move focus into the strip, so a keyboard reader lands
+// on its first control; Escape returns focus to the chip.
+for (const b of chips) b.onclick = event => {
+  toggle(b.dataset.pop);
+  if (event.detail !== 0) return;
+  const pop = quick.querySelector(`.m-pop[data-pop="${b.dataset.pop}"]`);
+  if (!pop.hidden) pop.querySelector('button:not([disabled]),input:not([disabled]),select,[tabindex="0"]')?.focus({preventScroll:true});
+};
 // Dismiss temporary panels with Escape and when tapping outside the tool rail.
 // This matters particularly in landscape, where the popover sits over the canvas.
 document.addEventListener('keydown', event => {

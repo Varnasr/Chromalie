@@ -1,6 +1,6 @@
 # Chromalie development roadmap
 
-Updated 18 October 2026. Production hosting: **Netlify**, source and CI: **GitHub**.
+Updated 19 October 2026. Production hosting: **Netlify**, source and CI: **GitHub**.
 
 A feature is **implemented** when its code is on `main`; it is **verified** only when automated checks and relevant real-device checks have passed. A successful Netlify deploy alone does not prove the feature works.
 
@@ -19,7 +19,7 @@ A feature is **implemented** when its code is on `main`; it is **verified** only
 1. Run and inspect GitHub Actions browser/engine tests after each change; repair regressions.
 2. Confirm Netlify publishes the intended `main` commit and loads all assets.
 3. Test layer switching, reordering, deletion, undo, import/export and autosave on real phone and desktop browsers.
-4. Audit keyboard navigation, focus visibility, contrast, accessible names and screen-reader announcements.
+4. Audit keyboard navigation, focus visibility, contrast, accessible names and screen-reader announcements. Partly automated: axe (WCAG 2.1 A and AA) runs on the home page, tour, studio, Colours strip, brushes strip and journal at phone and desktop widths. A keyboard walk of the studio on 19 October 2026 found every stop named and visibly focused, and strips opened with the keyboard now take focus and return it on Escape. Not done: a screen reader pass, and keyboard colouring of the canvas itself, which is not supported.
 5. Review brush textures, stroke smoothing and complex region boundaries on representative pages.
 6. Review artwork quality, source attribution and licensing before adding or replacing pages.
 7. Check real-device printing, sharing, stylus pressure, touch gestures and storage recovery.

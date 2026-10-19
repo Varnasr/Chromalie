@@ -360,6 +360,54 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   if (!active) fail(tag, `picking ${brushName} left no brush active`); else ok(`picking a brush (${brushName}) works`);
   if (!(await page.locator('#share-page').isVisible())) fail(tag, 'the Share button is not visible'); else ok('the Share button is visible');
 
+  // Sharing where the browser cannot share files, cannot share at all, or the reader cancels.
+  const shareCase = async (label, setup, expect) => {
+    await page.evaluate(setup);
+    await page.evaluate(() => { window.__opened = []; window.open = (u) => { window.__opened.push(String(u)); return null; }; });
+    await page.click('#share-page');
+    await page.waitForTimeout(1800);
+    const got = await page.evaluate(() => ({ opened: window.__opened, shared: window.__shared || null }));
+    const good = expect(got);
+    if (!good) fail(tag, `sharing ${label}: ${JSON.stringify(got)}`); else ok(`sharing ${label}`);
+  };
+  await shareCase('with no share menu opens WhatsApp with the link',
+    () => { Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); Object.defineProperty(navigator, 'canShare', { value: undefined, configurable: true }); },
+    g => g.opened.length === 1 && g.opened[0].startsWith('https://wa.me/?text=') && decodeURIComponent(g.opened[0]).includes('https://chromalie.page/'));
+  await shareCase('text-only when files cannot be shared',
+    () => { window.__shared = null; Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true }); Object.defineProperty(navigator, 'share', { value: async d => { window.__shared = { files: !!d.files, url: d.url }; }, configurable: true }); },
+    g => g.opened.length === 0 && g.shared && g.shared.files === false && g.shared.url === 'https://chromalie.page/');
+  await shareCase('with a picture when the browser allows it',
+    () => { window.__shared = null; Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true }); Object.defineProperty(navigator, 'share', { value: async d => { window.__shared = { files: d.files?.length === 1 && d.files[0].type === 'image/png' }; }, configurable: true }); },
+    g => g.opened.length === 0 && g.shared && g.shared.files === true);
+  await shareCase('cancelled by the reader does nothing further',
+    () => { window.__shared = null; Object.defineProperty(navigator, 'share', { value: async () => { throw new DOMException('cancelled', 'AbortError'); }, configurable: true }); },
+    g => g.opened.length === 0 && !g.shared && true);
+
+  // A project file that is not a Chromalie project must be refused without touching the page.
+  const titleBefore = await page.textContent('#art-title');
+  const layersBefore = await page.locator('#layer-list [data-layer]').count();
+  for (const [label, content] of [['text that is not JSON', 'not json at all'], ['JSON of the wrong shape', '{"hello":"world"}'], ['a project for another page size', JSON.stringify({ format: 'chromalie-project', version: 2, page_id: 'flowers-001', width: 5, height: 5, paint: 'x', layers: [] })]]) {
+    await page.locator('#project-file').setInputFiles({ name: 'bad.json', mimeType: 'application/json', buffer: Buffer.from(content) });
+    await page.waitForTimeout(500);
+    const toastText = await page.textContent('#toast');
+    const same = (await page.textContent('#art-title')) === titleBefore && (await page.locator('#layer-list [data-layer]').count()) === layersBefore;
+    if (!toastText || /restored/i.test(toastText) || !same) fail(tag, `a project file with ${label} was not refused cleanly (toast: "${toastText}")`);
+    else ok(`a project file with ${label} is refused and the page is untouched`);
+  }
+
+  // Keyboard: Enter on a chip opens its strip and moves focus into it; Escape closes it and returns focus.
+  if (await page.locator('.m-rail-toggle').isVisible() && await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed'))) await page.locator('.m-rail-toggle').click();
+  const brushChip = page.locator('.m-chip-btn[data-pop="brushes"]');
+  await brushChip.focus();
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(400);
+  const focusInStrip = await page.evaluate(() => !!document.activeElement?.closest('.m-pop:not([hidden])'));
+  if (!focusInStrip) fail(tag, 'opening a strip with the keyboard did not move focus into it'); else ok('a strip opened with the keyboard takes focus');
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  const back = await page.evaluate(() => document.activeElement?.getAttribute('data-pop'));
+  if (back !== 'brushes' || await page.locator('.m-pop:not([hidden])').count()) fail(tag, 'Escape did not close the strip and return focus to its button'); else ok('Escape closes the strip and returns focus to its button');
+
   // Back to the library, open the journal, turn a page.
   await page.click('#exit-studio');
   await page.waitForTimeout(1200);
