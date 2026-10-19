@@ -48,7 +48,7 @@ A protected Chromalie footer appears under every studio sheet and library thumbn
 
 ## Guidance
 
-`dist/guide.js` gives a six-step tour the first time someone opens a page in the studio, and a tip on every control when a mouse or pen rests on it or the keyboard reaches it. Touch gets no tips, because a press on a phone should act at once. The Help panel can replay the tour. Whether the tour has been seen is kept in `localStorage` under `chromalie-tour`. A new control gets its tip as a line in `TIPS`.
+`dist/guide.js` gives a six-step tour the first time someone opens a page in the studio (a step is skipped when its control is not on screen; on a phone one step explains the Tools button that opens the brushes, size and colours), and a tip on every control when a mouse or pen rests on it or the keyboard reaches it. Touch gets no tips, because a press on a phone should act at once. The Help panel can replay the tour. Whether the tour has been seen is kept in `localStorage` under `chromalie-tour`. A new control gets its tip as a line in `TIPS`.
 
 The studio puts the page first at every screen size (`dist/mobile.js`, styles at the end of `dist/style.css`). A short sheet at the bottom holds one row of colours, Fill / Brush / Eraser, and a row of five round buttons: the current brush, size, shade, in the lines or freehand, and More. Each round button folds out one short strip above the sheet; tapping the page or pressing Escape folds it away. The strips hold the real controls, moved there from the old tool panel, so their handlers in `app.js` keep working; the old panel is never shown. Undo, redo and full screen float over the page. `dist/tabs.js` still marks the panel's groups but its tabs no longer appear.
 

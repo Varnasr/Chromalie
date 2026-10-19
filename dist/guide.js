@@ -61,7 +61,8 @@ const TIPS = {
 const STEPS = [
   { at: '.m-tools', title: 'Fill, brush or rub out', text: 'Fill colours a whole shape with one tap. Brush paints with the brush you choose. Eraser rubs paint away and leaves the outlines.' },
   { at: '.m-swatches', title: 'Pick a colour', text: 'Tap a colour to use it. The rainbow circle at the end mixes any colour you like.' },
-  { at: '.m-chips', title: 'More choices fold out', text: 'Each button here opens a short strip: the brushes, brush size, shade, in the lines or freehand, and the rest under More.' },
+  { at: '.m-rail-toggle', title: 'Open the tools', text: 'On a phone the brushes, size, colours and more stay tucked away so the page has room. Tap Tools to open them. Layers are under More.' },
+  { at: '.m-chips', title: 'More choices fold out', text: 'Each button here opens a short strip: the brushes, brush size, colours with their shade and suggestions, in the lines or freehand, and the rest under More, including layers.' },
   { at: '#viewport', title: 'Colour here', text: 'Tap or draw on the page. Pinch to zoom, and drag with two fingers to move it.' },
   { at: '.m-undo', title: 'Change your mind', text: 'Undo and redo sit on the page. The corner button gives the page the whole screen. Your work is kept on this device as you go.' },
   { at: '#download', title: 'Keep your page', text: 'Download or print your page when you are done. Help explains every tool and can show you this tour again.' }
@@ -106,7 +107,7 @@ function place(box, target, gap = 10) {
   box.style.left = `${Math.round(left)}px`;
 }
 function showTip(el) {
-  if (tourOpen || !el.dataset.tip || el.offsetParent === null) return;
+  if (tourOpen || !el.dataset.tip || !shown(el)) return;
   owner = el;
   tip.textContent = el.dataset.tip;
   tip.hidden = false;
@@ -156,11 +157,14 @@ card.innerHTML = '<p class="guide-count" id="guide-count"></p><h2 id="guide-titl
   '<button type="button" class="button guide-next" id="guide-next">Next</button></span></div>';
 document.body.append(ring, card);
 
+// offsetParent is null for a fixed-position element even when it is on screen, so ask for
+// a layout box instead.
+const shown = el => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
 function visible(sel) {
   const el = document.querySelector(sel);
   // A tool may be inside a closed sheet or another tab; open it first.
-  if (el && el.offsetParent === null) window.chromalieShowGroup?.(el);
-  return el && el.offsetParent !== null ? el : null;
+  if (el && !shown(el)) window.chromalieShowGroup?.(el);
+  return el && shown(el) ? el : null;
 }
 
 function show() {

@@ -99,6 +99,16 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   if (!tour) fail(tag, 'the first-visit tour did not appear');
   else {
     await audit(page, `${tag} tour`);
+    // On a phone the tools start tucked away, so the tour must say how to open them.
+    if (w < 700) {
+      let found = false;
+      for (let i = 0; i < 6 && !found; i++) {
+        found = /Open the tools/.test(await page.locator('.guide-card').innerText());
+        if (!found) await page.locator('.guide-card button', { hasText: 'Next' }).click();
+        await page.waitForTimeout(300);
+      }
+      if (!found) fail(tag, 'the phone tour never tells the reader how to open the tools'); else ok('the phone tour explains how to open the tools');
+    }
     await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
   }
