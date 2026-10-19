@@ -136,8 +136,20 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     const project=JSON.parse(await (await import('node:fs/promises')).readFile(await download.path(),'utf8'));
     if(project.version!==2||project.layers?.length!==2||project.layers[0]?.visible!==false||project.layers[0]?.opacity!==0.45||!project.layers.every(l=>l.paint.startsWith('data:image/png;base64,')))fail(tag,'Layered project export is incomplete');
     else ok('Layered project exports both independent paint surfaces');
+    // Wait for the import itself to finish. The layer state it restores (first
+    // layer hidden, opacity 45) is the state the test set before exporting, so
+    // waiting on that alone passed before the import had run; the import's
+    // openPage then redrew the list under the rename below and the rename was
+    // lost. The import's own toast is the signal that it has finished.
+    await page.evaluate(()=>{document.getElementById('toast').textContent='';});
     await page.locator('#project-file').setInputFiles({name:'layer-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
-    await page.waitForFunction(()=>document.querySelector('#layer-list .layer-visibility')?.getAttribute('aria-pressed')==='false' && document.querySelector('#layer-list input[type="range"]')?.value==='45',null,{timeout:15000});
+    await page.waitForFunction(()=>document.getElementById('toast')?.textContent==='Editable project restored.' && document.querySelector('#layer-list .layer-visibility')?.getAttribute('aria-pressed')==='false' && document.querySelector('#layer-list input[type="range"]')?.value==='45',null,{timeout:15000});
+    // The toast has done its job as the signal. Left alone it fades out 3.5s
+    // later, and an axe audit that lands in its 0.2s fade measures half-
+    // transparent text and reports a contrast failure that no reader sees
+    // (CI, 2026-10-19). Dismiss it, as a reader's next action would.
+    await page.evaluate(()=>{const t=document.getElementById('toast');t.classList.remove('show');t.textContent='';});
+    await page.waitForTimeout(250);
     if(await page.locator('#layer-list [data-layer]').count()!==2)fail(tag,'Layered project import lost layers');
     else ok('Layered project imports two editable layers');
     if(await page.locator('#layer-list .layer-visibility').first().getAttribute('aria-pressed')!=='false')fail(tag,'Project import lost hidden layer state');
@@ -155,8 +167,18 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   await page.keyboard.press('Escape');
   if (openedRail && !await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed')))
     await layerRailToggle.click();
-  // The colour panel is initially collapsed on mobile; open it for palette checks.
-  if(w<700)await page.locator('.m-chip-btn[data-pop="colours"]:visible').click();
+  // The colour panel starts collapsed; open it for the palette checks.
+  // Its chip (data-pop="shade", labelled Colours) sits in the same tool rail as
+  // the layers chip, which the step above has just collapsed again, so reopen it.
+  // The strip is built at every width, so open it wherever the harmonies are
+  // not already on screen.
+  let reopenedRail=false,openedColours=false;
+  if(!await page.locator('#harmony-swatches').isVisible()){
+    if(await layerRailToggle.isVisible() && await page.locator('.m-quick').evaluate(el=>el.classList.contains('m-rail-collapsed'))){
+      await layerRailToggle.click();reopenedRail=true;
+    }
+    await page.locator('.m-chip-btn[data-pop="shade"]:visible').click();openedColours=true;
+  }
   // Colour harmony suggestions are derived from the selected colour.
   const harmonies=page.locator('#harmony-swatches button');
   if(await harmonies.count()!==5)fail(tag,'Expected five harmony colour suggestions');
@@ -165,6 +187,9 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     if(!/^#[0-9a-f]{6}$/i.test(await page.locator('#custom-colour').inputValue()))fail(tag,'Harmony colour was not selected');
     else ok('Colour harmonies select a valid custom colour');
   }
+  // Close the strip, and leave the rail collapsed again, as the steps below expect.
+  if(openedColours)await page.keyboard.press('Escape');
+  if(reopenedRail)await layerRailToggle.click();
   // Brush samples must be actual, varied drawings rather than identical CSS pills.
   const samples = await page.evaluate(() => [...document.querySelectorAll('.brush-button canvas.brush-sample-canvas')].map(c => ({
     tool: c.closest('[data-tool]')?.dataset.tool,

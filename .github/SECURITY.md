@@ -1,0 +1,22 @@
+# Security policy
+
+## Reporting a vulnerability
+
+Email **hello@impactmojo.in**. Please do not open a public issue for a vulnerability.
+
+Include a description of the problem, the steps to reproduce it and what it
+would let someone do.
+
+You will get an acknowledgement within 48 hours, and a fix for a critical issue
+within 7 days.
+
+## Scope
+
+In scope: cross-site scripting, injection, exposed credentials or personal
+data, and changes to published content by someone who should not be able to
+make them.
+
+For this repository that includes local saving and project import (a crafted project file), the asset import pipeline, and the artwork licences.
+
+Out of scope: denial of service, social engineering, and vulnerabilities in
+third-party services this site uses.

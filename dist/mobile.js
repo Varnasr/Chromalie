@@ -246,7 +246,9 @@ const brushFinder=panel.querySelector('.chromalie-brush-finder');
 const brushEmpty=panel.querySelector('.brush-empty');
 strip('brushes', 'Choose a brush', [brushFinder,brushGrid,brushEmpty]);
 strip('size', 'Brush', [$('size-label'), parentOf('opacity'), $('medium-setting'), parentOf('smoothing')]);
-strip('shade', 'Colour palettes and shades', [q('.palette-heading'), q('.palette-switcher'), q('.palette-select-label'), $('swatches'), q('.shade-control'), q('.custom-colour')]);
+// The harmony and recent-colour rows were added to the desktop panel on
+// 2026-10-18 and not to this list, so on a phone neither could be reached.
+strip('shade', 'Colour palettes and shades', [q('.palette-heading'), q('.palette-switcher'), q('.palette-select-label'), $('swatches'), q('.colour-harmonies'), q('.recent-colours'), q('.shade-control'), q('.custom-colour')]);
 
 // More: the utility tools other than the eraser, the page settings, and the
 // page actions, as one list.
