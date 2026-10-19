@@ -12,6 +12,12 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Netlify serves .webmanifest as application/octet-stream unless told otherwise.
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json"
+
 [[headers]]
   for = "/version.json"
   [headers.values]
