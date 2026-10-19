@@ -24,7 +24,7 @@ const { chromium, devices } = await import(process.env.PLAYWRIGHT_CORE || 'playw
 const axeSource = await readFile(process.env.AXE || require.resolve('axe-core/axe.min.js'), 'utf8');
 
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.webmanifest': 'application/manifest+json' };
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg' };
 const server = http.createServer(async (req, res) => {
   let file = decodeURIComponent(new URL(req.url, 'http://x').pathname);
   if (file.endsWith('/')) file += 'index.html';
@@ -86,6 +86,16 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
 
   await page.goto(base, { waitUntil: 'networkidle' });
   await noOverflow(page, `${tag} home`);
+  // The web app manifest the page links must load as JSON and every icon it names must exist.
+  const manifestOk = await page.evaluate(async () => {
+    const href = document.querySelector('link[rel="manifest"]')?.href;
+    if (!href) return 'no manifest link';
+    const r = await fetch(href); if (!r.ok) return `manifest answered ${r.status}`;
+    let m; try { m = await r.json(); } catch (e) { return 'manifest is not JSON'; }
+    for (const icon of m.icons || []) { const i = await fetch(new URL(icon.src, href)); if (!i.ok) return `icon ${icon.src} answered ${i.status}`; }
+    return (m.icons || []).length ? 'ok' : 'manifest names no icons';
+  });
+  if (manifestOk !== 'ok') fail(tag, `web app manifest: ${manifestOk}`); else ok('the web app manifest and its icons load');
   await checkVisibleControlsFit(page, `${tag} home`);
   await audit(page, `${tag} home`);
   await capture(page,`${tag}-home`);
