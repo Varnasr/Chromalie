@@ -161,6 +161,9 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     if(await page.locator('#layer-list [data-layer]').nth(1).textContent()!=='Highlights')fail(tag,'Layer rename failed');
     await page.locator('#layer-list button[aria-label="Move Highlights down"]').click();
     if(await page.locator('#layer-list [data-layer]').first().textContent()!=='Highlights')fail(tag,'Layer reorder failed');
+    // The list is rebuilt on every change; focus must stay in it so a keyboard reader keeps their place.
+    if(!await page.evaluate(()=>!!document.activeElement?.closest('#layer-list')))fail(tag,'Keyboard focus was lost when the layer list changed');
+    else ok('focus stays in the layer list after a change');
     page.once('dialog',dialog=>dialog.accept());
     await page.locator('#layer-list button[aria-label^="Delete "]').first().click();
     if(await page.locator('#layer-list [data-layer]').count()!==1)fail(tag,'Layer deletion failed');

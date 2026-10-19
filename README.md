@@ -42,7 +42,9 @@ Paint remains separate from original artwork. Final images multiply the original
 
 Progress and palettes use IndexedDB on the visitor's device. No account, server upload, community gallery, or payment service is present; the only thing sent anywhere is the anonymous daily counts described below. Device saving can be disabled and saved work cleared through the storage settings. Editable project files can be downloaded and reopened locally. Clearing browser data can remove work. Undo history is limited to ten changes while a page is open; it is not stored between sessions.
 
-Layer undo history is kept separately for each layer during the open session; renaming, moving and deleting layers are not themselves undoable.\n\nThe catalogue is a prepared snapshot. Changes in Drive require a new extraction and deployment. Source PDFs are not shipped to visitors. The production build restores approved artwork from the checksum manifest; new assets require a deliberate manifest update and rights review.
+Layer undo history is kept separately for each layer during the open session; renaming, moving and deleting layers are not themselves undoable.
+
+The catalogue is a prepared snapshot. Changes in Drive require a new extraction and deployment. Source PDFs are not shipped to visitors. The production build restores approved artwork from the checksum manifest; new assets require a deliberate manifest update and rights review.
 
 A protected Chromalie footer appears under every studio sheet and library thumbnail. PNG exports and printouts append a canvas-rendered wordmark and the collection/page title. Source artwork and saved paint layers retain their original dimensions.
 

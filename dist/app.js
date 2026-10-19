@@ -27,24 +27,34 @@ function switchLayer(i){
  updateHistory();drawLayerControls();render();
 }
 function drawLayerControls(){
- const root=$('layer-list');root.replaceChildren();
+ const root=$('layer-list');
+ // The list is rebuilt on every change, which would drop keyboard focus onto the page.
+ // Remember which control of which layer had it, and give it back afterwards.
+ const had=document.activeElement&&root.contains(document.activeElement)?document.activeElement:null;
+ const focusLayer=had?.closest('.layer-item')?._layer,focusKind=had?.dataset.ctl;
+ root.replaceChildren();
  paintLayers.forEach((layer,i)=>{
   const item=document.createElement('div');item.className='layer-item';
-  const select=document.createElement('button');select.type='button';select.textContent=layer.name;select.dataset.layer=String(i);select.setAttribute('aria-pressed',String(i===activeLayer));select.onclick=()=>switchLayer(i);
-  const visible=document.createElement('button');visible.type='button';visible.className='layer-visibility';visible.textContent=layer.visible===false?'Show':'Hide';visible.setAttribute('aria-label',(layer.visible===false?'Show ':'Hide ')+layer.name);visible.setAttribute('aria-pressed',String(layer.visible!==false));
+  const select=document.createElement('button');select.type='button';select.textContent=layer.name;select.dataset.layer=String(i);select.dataset.ctl='select';select.setAttribute('aria-pressed',String(i===activeLayer));select.onclick=()=>switchLayer(i);
+  const visible=document.createElement('button');visible.type='button';visible.className='layer-visibility';visible.dataset.ctl='visible';visible.textContent=layer.visible===false?'Show':'Hide';visible.setAttribute('aria-label',(layer.visible===false?'Show ':'Hide ')+layer.name);visible.setAttribute('aria-pressed',String(layer.visible!==false));
   visible.onclick=()=>{finishStroke();layer.visible=layer.visible===false;drawLayerControls();render();scheduleSave();};
-  const opacity=document.createElement('input');opacity.type='range';opacity.min='0';opacity.max='100';opacity.step='5';opacity.value=String(Math.round((layer.opacity??1)*100));opacity.setAttribute('aria-label',layer.name+' opacity');opacity.title=layer.name+' opacity';
+  const opacity=document.createElement('input');opacity.type='range';opacity.dataset.ctl='opacity';opacity.min='0';opacity.max='100';opacity.step='5';opacity.value=String(Math.round((layer.opacity??1)*100));opacity.setAttribute('aria-label',layer.name+' opacity');opacity.title=layer.name+' opacity';
   opacity.oninput=()=>{finishStroke();layer.opacity=Number(opacity.value)/100;render();scheduleSave();};
-  const rename=document.createElement('button');rename.type='button';rename.textContent='Rename';rename.setAttribute('aria-label','Rename '+layer.name);
+  const rename=document.createElement('button');rename.type='button';rename.dataset.ctl='rename';rename.textContent='Rename';rename.setAttribute('aria-label','Rename '+layer.name);
   rename.onclick=()=>{const name=prompt('Layer name',layer.name);if(name===null)return;const clean=name.trim().slice(0,40);if(!clean)return;layer.name=clean;drawLayerControls();scheduleSave();};
-  const up=document.createElement('button');up.type='button';up.textContent='↑';up.setAttribute('aria-label','Move '+layer.name+' up');up.disabled=i===paintLayers.length-1;
+  const up=document.createElement('button');up.type='button';up.dataset.ctl='up';up.textContent='↑';up.setAttribute('aria-label','Move '+layer.name+' up');up.disabled=i===paintLayers.length-1;
   up.onclick=()=>{finishStroke();syncLayer();[paintLayers[i],paintLayers[i+1]]=[paintLayers[i+1],paintLayers[i]];if(activeLayer===i)activeLayer=i+1;else if(activeLayer===i+1)activeLayer=i;drawLayerControls();render();scheduleSave();};
-  const down=document.createElement('button');down.type='button';down.textContent='↓';down.setAttribute('aria-label','Move '+layer.name+' down');down.disabled=i===0;
+  const down=document.createElement('button');down.type='button';down.dataset.ctl='down';down.textContent='↓';down.setAttribute('aria-label','Move '+layer.name+' down');down.disabled=i===0;
   down.onclick=()=>{finishStroke();syncLayer();[paintLayers[i],paintLayers[i-1]]=[paintLayers[i-1],paintLayers[i]];if(activeLayer===i)activeLayer=i-1;else if(activeLayer===i-1)activeLayer=i;drawLayerControls();render();scheduleSave();};
-  const remove=document.createElement('button');remove.type='button';remove.textContent='×';remove.setAttribute('aria-label','Delete '+layer.name);remove.title='Delete '+layer.name;remove.disabled=paintLayers.length===1;
+  const remove=document.createElement('button');remove.type='button';remove.dataset.ctl='remove';remove.textContent='×';remove.setAttribute('aria-label','Delete '+layer.name);remove.title='Delete '+layer.name;remove.disabled=paintLayers.length===1;
   remove.onclick=()=>{if(!confirm('Delete '+layer.name+'? This removes its painting.'))return;finishStroke();syncLayer();paintLayers.splice(i,1);if(activeLayer===i){activeLayer=Math.min(i,paintLayers.length-1);pc.clearRect(0,0,paint.width,paint.height);pc.drawImage(paintLayers[activeLayer].canvas,0,0);undoStack=paintLayers[activeLayer].undo||[];redoStack=paintLayers[activeLayer].redo||[];updateHistory();}else if(activeLayer>i)activeLayer--;drawLayerControls();render();scheduleSave();};
-  item.append(select,visible,opacity,rename,up,down,remove);root.append(item);
+  item._layer=layer;item.append(select,visible,opacity,rename,up,down,remove);root.append(item);
  });$('add-layer').disabled=paintLayers.length>=5;
+ if(had){
+  const item=[...root.children].find(el=>el._layer===focusLayer);
+  const target=item?(item.querySelector(`[data-ctl="${focusKind}"]:not([disabled])`)||item.querySelector('button:not([disabled])')):(root.querySelector('[data-ctl="select"]')||$('add-layer'));
+  target?.focus({preventScroll:true});
+ }
 }
 function resetLayers(){paintLayers=[{name:'Layer 1',canvas:snapshotPaint(),visible:true,opacity:1,undo:[],redo:[]}];activeLayer=0;undoStack=[];redoStack=[];updateHistory();drawLayerControls();}
 $('add-layer').onclick=()=>{if(!current||paintLayers.length>=5)return;finishStroke();syncLayer();paintLayers[activeLayer].undo=undoStack;paintLayers[activeLayer].redo=redoStack;const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;paintLayers.push({name:'Layer '+(paintLayers.length+1),canvas:c,visible:true,opacity:1,undo:[],redo:[]});activeLayer=paintLayers.length-1;pc.clearRect(0,0,paint.width,paint.height);undoStack=[];redoStack=[];updateHistory();drawLayerControls();render();scheduleSave();};
