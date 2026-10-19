@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # package.json declares no dependencies (it only holds a test script), so
+  # npm is left out. The three workflows pin their actions by major version.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "ci"
+    commit-message:
+      prefix: "CI:"
