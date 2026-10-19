@@ -22,6 +22,8 @@ Chromalie supports up to five independent transparent paint layers. The active l
 
 Built-in palettes and the custom palette are rendered by `renderColours()` in `dist/app.js`. The native HTML colour input selects arbitrary colours. `renderHarmonyColours()` derives analogous, complementary and triadic suggestions from the selected colour in HSL space; these are suggestions, not perceptually uniform or accessibility-checked combinations. Recent colours are limited to eight selections in memory per session. Custom palette additions and removals are saved in IndexedDB when local storage is enabled. Do not present recent colours as cross-session history.
 
+`renderHarmonyColours()` also runs once at startup, so the row is filled before the first colour change. The studio panel in `index.html` is never shown: `dist/mobile.js` moves each control into a strip, and the Colours strip holds the palette chips, swatches, shade, custom colour, remove-colour button, recent colours and harmonies. A new control added to the panel but not to a `strip(...)` list in `mobile.js` is unreachable at every width. The browser test opens the Colours strip and fails if the recent or harmony rows are not in it.
+
 ## Netlify deployment
 
 `netlify.toml` is the production build source of truth: the build restores checksum-approved artwork, stamps asset references and publishes `dist/`. The GitHub Actions workflow performs independent checks and uploads responsive screenshots but does not deploy the site. Because the two systems run separately, a green Netlify deployment does not establish that GitHub Actions tests passed. Confirm both and inspect the live result.

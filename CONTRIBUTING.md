@@ -19,6 +19,7 @@ The `main` branch triggers GitHub Actions checks and an independent Netlify buil
 
 - Preserve existing artwork IDs and IndexedDB keys to avoid losing saved user work.
 - Treat user-supplied artwork and third-party pages as licensed material; check attribution and reuse rights.
+- Put every new studio control into a strip in `dist/mobile.js`. The old tool panel is hidden at every width, so a control left in it cannot be reached.
 - Maintain paint/ink separation, layer composition, export/print consistency and project import compatibility.
 - Add regression tests for changes to controls, rendering or storage. Test both mobile and desktop widths.
 - Check error paths: storage quota, failed IndexedDB writes, malformed project JSON and unavailable sharing.

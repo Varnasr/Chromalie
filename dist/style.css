@@ -721,3 +721,10 @@ img,svg,video,canvas{max-width:100%}
 .colour-harmonies{margin:8px 0}.colour-harmonies strong{font-size:12px;font-weight:600}.colour-harmonies #harmony-swatches{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.colour-harmonies .swatch{flex:0 0 27px;width:27px;height:27px;border:1px solid #aab0a5;border-radius:50%}.colour-harmonies .swatch:focus-visible{outline:3px solid #2766d7;outline-offset:2px}
 
 #remove-colour:not([hidden]){display:block;margin:6px 0 10px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--ink);padding:7px 10px;font:inherit;font-size:12px;cursor:pointer}#remove-colour:focus-visible{outline:3px solid #2766d7;outline-offset:2px}
+/* Colours strip: the palette chips already choose the palette, so the select that
+   repeats them is hidden here (it stays in the page for the code that reads it), and
+   the recent and suggested colours sit in compact left-aligned rows. */
+.m-pop .palette-select-label{display:none}
+.m-pop .recent-colours #recent-swatches,.m-pop .colour-harmonies #harmony-swatches{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px;margin-top:6px}
+.m-pop .recent-colours .swatch,.m-pop .colour-harmonies .swatch{margin:0;width:30px;height:30px;flex:0 0 30px}
+.m-pop .recent-colours,.m-pop .colour-harmonies{margin:10px 0 4px}

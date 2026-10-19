@@ -7,3 +7,4 @@ books/
 *.tar.gz
 *.zip
 __pycache__/
+test-artifacts/

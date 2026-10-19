@@ -4,7 +4,7 @@
 // and where it cannot share at all it opens WhatsApp with the words written in.
 import { count } from './count.js';
 
-const SITE = 'https://varnasr.github.io/Chromalie/';
+const SITE = 'https://chromalie.page/';
 const words = page => `I coloured ${page?.title ? `"${page.title}"` : 'this page'} on Chromalie, a free colouring studio by StoryWell Books.`;
 const toast = msg => {
   const t = document.getElementById('toast');

@@ -137,6 +137,10 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     if(project.version!==2||project.layers?.length!==2||project.layers[0]?.visible!==false||project.layers[0]?.opacity!==0.45||!project.layers.every(l=>l.paint.startsWith('data:image/png;base64,')))fail(tag,'Layered project export is incomplete');
     else ok('Layered project exports both independent paint surfaces');
     await page.locator('#project-file').setInputFiles({name:'layer-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(project))});
+    // The hidden layer and 45% opacity were already on screen before the import, so
+    // they cannot show that it finished. Import reopens the page and then replaces the
+    // layers; only its own completion message marks the end, and acting earlier races it.
+    await page.waitForFunction(()=>document.getElementById('toast')?.textContent==='Editable project restored.',null,{timeout:15000});
     await page.waitForFunction(()=>document.querySelector('#layer-list .layer-visibility')?.getAttribute('aria-pressed')==='false' && document.querySelector('#layer-list input[type="range"]')?.value==='45',null,{timeout:15000});
     if(await page.locator('#layer-list [data-layer]').count()!==2)fail(tag,'Layered project import lost layers');
     else ok('Layered project imports two editable layers');
@@ -155,8 +159,17 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   await page.keyboard.press('Escape');
   if (openedRail && !await page.locator('.m-quick').evaluate(el => el.classList.contains('m-rail-collapsed')))
     await layerRailToggle.click();
-  // The colour panel is initially collapsed on mobile; open it for palette checks.
-  if(w<700)await page.locator('.m-chip-btn[data-pop="colours"]:visible').click();
+  // The Colours chip (data-pop="shade") opens the strip that holds the palette and harmony
+  // swatches at every width; on a phone the chip sits in the tool rail, which starts collapsed.
+  if(await layerRailToggle.isVisible()&&await page.locator('.m-quick').evaluate(el=>el.classList.contains('m-rail-collapsed')))await layerRailToggle.click();
+  await page.locator('.m-chip-btn[data-pop="shade"]:visible').click();
+  // The recent, suggested and removable colours were once hidden in the old tool panel,
+  // so check they sit inside the strip a visitor can actually open.
+  for(const [what,sel] of [['Recent colours','.m-pop:not([hidden]) .recent-colours'],['Colour harmonies','.m-pop:not([hidden]) .colour-harmonies']])
+    if(!await page.locator(sel).count())fail(tag,`${what} are not in the open Colours strip`);
+    else ok(`${what} are in the Colours strip`);
+  await page.waitForTimeout(500); // let the strip finish unfolding; axe reads colours mid-fade
+  await audit(page, `${tag} colours strip open`);
   // Colour harmony suggestions are derived from the selected colour.
   const harmonies=page.locator('#harmony-swatches button');
   if(await harmonies.count()!==5)fail(tag,'Expected five harmony colour suggestions');
@@ -165,6 +178,9 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
     if(!/^#[0-9a-f]{6}$/i.test(await page.locator('#custom-colour').inputValue()))fail(tag,'Harmony colour was not selected');
     else ok('Colour harmonies select a valid custom colour');
   }
+  // The rail check further down expects the phone rail to start collapsed.
+  await page.keyboard.press('Escape');
+  if(await layerRailToggle.isVisible()&&!await page.locator('.m-quick').evaluate(el=>el.classList.contains('m-rail-collapsed')))await layerRailToggle.click();
   // Brush samples must be actual, varied drawings rather than identical CSS pills.
   const samples = await page.evaluate(() => [...document.querySelectorAll('.brush-button canvas.brush-sample-canvas')].map(c => ({
     tool: c.closest('[data-tool]')?.dataset.tool,

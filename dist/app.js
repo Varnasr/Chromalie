@@ -702,7 +702,7 @@ $('dismiss-storage').onclick=()=>{$('storage-notice').hidden=true;try{localStora
 window.addEventListener('hashchange',()=>{if(location.hash==='#storage'&&!$('storage-dialog').open)openStorage();});
 async function init(){
  try{db=await openDB();await loadSaved();}catch(e){toast('Device saving is unavailable. You can still colour and download.');}
- renderColours();updateTools();
+ renderColours();renderHarmonyColours();updateTools();
  try{$('storage-notice').hidden=localStorage.getItem('chromalie-storage-notice')==='seen';}catch(e){$('storage-notice').hidden=false;}if(location.hash==='#storage')openStorage();
  try{const response=await fetch('catalog.json');if(!response.ok)throw Error('catalog');catalog=applyCollectionNames(await response.json());catalog.pages.sort((a,b)=>a.number-b.number||catalog.books.findIndex(p=>p.id===a.book)-catalog.books.findIndex(p=>p.id===b.book));
   $('page-count').textContent=`${catalog.pages.length} pages · ${catalog.books.length} collections`;

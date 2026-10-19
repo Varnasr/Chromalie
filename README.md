@@ -58,7 +58,7 @@ The studio puts the page first at every screen size (`dist/mobile.js`, styles at
 
 ## Sharing
 
-`dist/share.js` puts a Share button beside Download in the studio and on every journal page. It hands the page, as it would download, to the device's own share menu (`navigator.share` with a file), so WhatsApp and the rest appear there, with the words "I coloured ... on Chromalie, a free colouring studio by StoryWell Books" and the site link. Where a browser cannot share a picture it shares the words and link; where it cannot share at all it opens WhatsApp with the words written in, and says to download the page to send the picture. A browser lets a page share only straight after a tap, so if preparing a large page takes too long and the browser refuses, a small "Your picture is ready" bar offers a second tap. The studio hands the picture over through `window.chromalieArtwork` in `app.js`.
+`dist/share.js` puts a Share button beside Download in the studio and on every journal page. It hands the page, as it would download, to the device's own share menu (`navigator.share` with a file), so WhatsApp and the rest appear there, with the words "I coloured ... on Chromalie, a free colouring studio by StoryWell Books" and the link https://chromalie.page/. Where a browser cannot share a picture it shares the words and link; where it cannot share at all it opens WhatsApp with the words written in, and says to download the page to send the picture. A browser lets a page share only straight after a tap, so if preparing a large page takes too long and the browser refuses, a small "Your picture is ready" bar offers a second tap. The studio hands the picture over through `window.chromalieArtwork` in `app.js`.
 
 ## Keeping saves on an iPhone
 

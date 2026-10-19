@@ -246,7 +246,7 @@ const brushFinder=panel.querySelector('.chromalie-brush-finder');
 const brushEmpty=panel.querySelector('.brush-empty');
 strip('brushes', 'Choose a brush', [brushFinder,brushGrid,brushEmpty]);
 strip('size', 'Brush', [$('size-label'), parentOf('opacity'), $('medium-setting'), parentOf('smoothing')]);
-strip('shade', 'Colour palettes and shades', [q('.palette-heading'), q('.palette-switcher'), q('.palette-select-label'), $('swatches'), q('.shade-control'), q('.custom-colour')]);
+strip('shade', 'Colour palettes and shades', [q('.palette-heading'), q('.palette-switcher'), q('.palette-select-label'), $('swatches'), q('.shade-control'), q('.custom-colour'), $('remove-colour'), q('.recent-colours'), q('.colour-harmonies')]);
 
 // More: the utility tools other than the eraser, the page settings, and the
 // page actions, as one list.
