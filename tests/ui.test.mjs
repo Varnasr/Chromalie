@@ -572,6 +572,53 @@ for(const [w,h] of [[320,700],[430,932],[768,1024]]){
  else ok('The recovered painting closes normally');
  await ctx.close();
 }
+// Keyboard colouring needs a clean studio: the main run above hides and fades layers, which would make a fill invisible.
+for (const [w, h] of [[1280, 900], [390, 844]]) {
+  const tag = `keyboard colouring ${w}x${h}`;
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1, isMobile: w < 700, hasTouch: w < 700 });
+  await ctx.addInitScript(() => { try { localStorage.setItem('chromalie-storage-notice', 'seen'); localStorage.setItem('chromalie-tour', 'done'); } catch (e) {} });
+  const page = await ctx.newPage();
+  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.click('#hero-start');
+  await page.locator('.page-card').nth(1).click();
+  await loaded(page);
+  await page.waitForTimeout(1500);
+  await page.click('[data-m="fill"]');
+  // A dark swatch, so a fill cannot be invisible on white paper.
+  await page.locator('.m-swatch').nth(3).click();
+  await page.focus('#viewport');
+  if (!(await page.locator('#kb-cursor').isVisible())) fail(tag, 'focusing the page area did not show the keyboard pointer'); else ok('focusing the page area shows the keyboard pointer');
+  await page.keyboard.press('Home');
+  const at = () => page.evaluate(() => { const r = document.getElementById('kb-cursor').getBoundingClientRect(); return { x: r.x, y: r.y }; });
+  const start = await at();
+  await page.keyboard.press('ArrowRight'); await page.keyboard.press('ArrowDown');
+  const moved = await at();
+  if (!(moved.x > start.x && moved.y > start.y)) fail(tag, 'arrow keys did not move the keyboard pointer'); else ok('arrow keys move the keyboard pointer');
+  // The exported artwork has to change: the "Shape filled." message alone proves nothing.
+  const artworkHash = () => page.evaluate(async () => { const { blob } = await window.chromalieArtwork(); const buf = new Uint8Array(await blob.arrayBuffer()); let h = 2166136261; for (let i = 0; i < buf.length; i++) h = Math.imul(h ^ buf[i], 16777619) >>> 0; return h; });
+  const before = await artworkHash();
+  // The centre of a page may be a line or open background, so sweep positions until a shape takes the colour.
+  let filled = false;
+  for (let row = -3; row < 4 && !filled; row++) {
+    await page.keyboard.press('Home');
+    for (let k = 0; k < Math.abs(row) * 4; k++) await page.keyboard.press(row < 0 ? 'ArrowUp' : 'ArrowDown');
+    for (let col = 0; col < 8 && !filled; col++) {
+      await page.evaluate(() => { document.getElementById('toast').textContent = ''; });
+      await page.keyboard.press('Enter'); await page.waitForTimeout(120);
+      filled = (await page.locator('#toast').textContent()) === 'Shape filled.';
+      if (!filled) for (let k = 0; k < 3; k++) await page.keyboard.press('ArrowRight');
+    }
+  }
+  if (!filled) fail(tag, 'Enter on the page area never filled a shape');
+  else if ((await artworkHash()) === before) fail(tag, 'Enter reported "Shape filled." but the artwork did not change');
+  else ok('Enter fills the shape under the keyboard pointer');
+  if (await page.locator('#undo').isDisabled()) fail(tag, 'a keyboard fill did not enable Undo'); else ok('a keyboard fill can be undone');
+  await page.keyboard.press('Tab');
+  if (await page.locator('#kb-cursor').isVisible()) fail(tag, 'the keyboard pointer stayed visible after focus left the page area'); else ok('the keyboard pointer hides when focus leaves the page area');
+  await audit(page, tag);
+  await ctx.close();
+}
+
 await browser.close();
 server.close();
 

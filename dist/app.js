@@ -699,6 +699,32 @@ $('start-over').onclick=()=> $('reset-dialog').showModal();$('cancel-reset').onc
 $('help-button').onclick=()=>showInfo('A few ways to colour','<ul><li>In the lines is the default. Each stroke stays inside the area where it begins. All brushes respect the same area mask.</li><li>Fill: tap an enclosed shape. Gradient fill adds a lighter shade towards the bottom.</li><li>Select areas: tap one or more shapes, then choose a brush. The selection stays active until you clear it.</li><li>Freehand: deliberately paint across shapes. Clear a selection first to paint everywhere.</li><li>Close gaps: choose Fine for tiny details, Standard for most pages, or Strong for broken outlines. Strong can hide very small areas. Drawings with larger openings may still need freehand.</li><li>Paint background: turn this on to colour an area that touches the page edge or covers a large part of the drawing. It is off initially to help contain accidental spills.</li><li>Pinch to zoom. Drag with two fingers or choose Move page. A supported stylus adds pressure variation.</li><li>The Chromalie mark sits below the artwork. It appears on downloads and printouts.</li><li>Your work saves on this browser. Download a PNG for a copy to keep. Undo history lasts while a page is open.</li></ul>');
 $('studio-help').onclick=()=> $('help-button').click();
 document.addEventListener('keydown',e=>{if(!current||e.target.matches('input,select,textarea')||document.querySelector('dialog[open]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();(e.shiftKey?$('redo'):$('undo')).click();}if(e.key==='['){size=Math.max(2,size-3);$('brush-size').value=size;$('size-value').textContent=size;tip=null;updateBrushPreview();}if(e.key===']'){size=Math.min(150,size+3);$('brush-size').value=size;$('size-value').textContent=size;tip=null;updateBrushPreview();}if(e.key==='Escape')clearSelection();});
+// Keyboard colouring. The page area takes focus; arrow keys move a visible pointer
+// (Shift moves four times as far, Home centres it) and Enter or Space taps where it
+// is, with the same fill, pick-colour or select action a finger tap would run.
+const kbEl=document.createElement('div');kbEl.id='kb-cursor';kbEl.hidden=true;kbEl.setAttribute('aria-hidden','true');document.querySelector('.art-surface').append(kbEl);
+let kbPoint=null;
+function kbShow(){if(!kbPoint)return;kbEl.hidden=false;kbEl.style.left=`${kbPoint.x/canvas.width*100}%`;kbEl.style.top=`${kbPoint.y/canvas.height*100}%`;}
+vp.tabIndex=0;vp.setAttribute('role','group');vp.setAttribute('aria-label','Colouring page. Use the arrow keys to move the pointer and Enter or Space to colour the shape under it. Hold Shift to move faster.');
+vp.addEventListener('focus',()=>{if(current){kbPoint=kbPoint||{x:canvas.width/2,y:canvas.height/2};kbShow();}});
+vp.addEventListener('blur',()=>{kbEl.hidden=true;});
+vp.addEventListener('keydown',e=>{
+ if(!current||e.target!==vp||e.ctrlKey||e.metaKey||e.altKey||!$('loading').hidden)return;
+ const step=Math.round(canvas.width/60)*(e.shiftKey?4:1),move={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[e.key];
+ kbPoint=kbPoint||{x:canvas.width/2,y:canvas.height/2};
+ if(move){e.preventDefault();kbPoint.x=Math.max(0,Math.min(canvas.width-1,kbPoint.x+move[0]*step));kbPoint.y=Math.max(0,Math.min(canvas.height-1,kbPoint.y+move[1]*step));kbShow();return;}
+ if(e.key==='Home'){e.preventDefault();kbPoint={x:canvas.width/2,y:canvas.height/2};kbShow();return;}
+ if(e.key!=='Enter'&&e.key!==' ')return;
+ e.preventDefault();kbShow();
+ const p={x:kbPoint.x,y:kbPoint.y,pressure:.65};
+ if(tool==='picker'){pickColour(p);return;}
+ if(tool==='select'){if(!regionReady){toast('Wait while the page prepares its shapes.');return;}const id=regionAt(labels,canvas.width,canvas.height,p.x,p.y);if(selected.has(id)){selected.delete(id);updateSelection();toast('Shape unselected.');}else if(allowedArea(id)){selected.add(id);updateSelection();toast('Shape selected.');}else toast('Nothing to select here.');return;}
+ if(tool==='erase'||tool==='hand'){toast('The eraser and Move page need a mouse or touch. Choose a brush or Pick colour to colour from the keyboard.');return;}
+ if(!regionReady){toast('The page is still preparing its shapes.');return;}
+ const id=regionAt(labels,canvas.width,canvas.height,p.x,p.y);
+ if(!selected.size&&!allowedArea(id)){toast('Nothing to fill here. Move the pointer onto a shape.');return;}
+ fillArea(p);toast('Shape filled.');
+});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){finishStroke();persist();}});window.addEventListener('pagehide',()=>{finishStroke();persist();});
 function openStorage(){finishStroke();$('save-device').checked=storageEnabled;$('storage-dialog').showModal();}
 document.querySelectorAll('[data-open-storage]').forEach(b=>b.onclick=openStorage);$('close-storage').onclick=()=> $('storage-dialog').close();
