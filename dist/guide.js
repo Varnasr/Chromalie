@@ -11,7 +11,7 @@ const TIPS = {
   '[data-pop="brushes"]': 'Choose a brush.',
   '[data-pop="size"]': 'Brush size, how see-through the paint is, and smoothing.',
   '[data-pop="shade"]': 'Lighter or darker, other palettes, and your own colours.',
-  '.m-lines': 'Switch between staying in the lines and painting freely.',
+  '.m-lines': 'A switch. On, paint stays inside the shape where you start. Off, it can cross any line.',
   '[data-pop="more"]': 'Pick a colour from the page, move it, select areas, gap closing, print, save and more.',
   '.m-custom': 'Mix any colour you like.',
   '.m-undo': 'Undo your last change (Ctrl+Z).',
