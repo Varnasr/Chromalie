@@ -228,7 +228,7 @@ quick.querySelector('.m-lines').onclick = () => {
   press(`.mode-tabs [data-mode="${next}"]`);
   const t = $('toast');
   t.textContent = next === 'auto' ? 'In the lines is on. Paint stays inside the shape where you start.' : 'In the lines is off. Paint can go anywhere, over the lines.';
-  t.classList.add('show'); clearTimeout(linesToastTimer); linesToastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+  t.classList.remove('has-action'); t.classList.add('show'); clearTimeout(linesToastTimer); linesToastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 };
 
 // Fold-out strips ------------------------------------------------------------

@@ -28,7 +28,7 @@ Use **Save editable project** to download a Chromalie JSON project, and **Open p
 ## Common problems
 
 - **A fill covers too much:** the source artwork may have an open boundary. Try adjusting the gap-closing setting or use an automatic brush on smaller areas.
-- **A brush will not paint:** wait for region preparation, select an intended area, or deliberately switch to Freehand.
+- **A brush will not paint:** wait for region preparation, select an intended area, or deliberately switch to Freehand. With In the lines on, a stroke stays in the shape where it begins and looks up to about a brush-width around its first touch for one, so starting on an outline still works. If the start is in a very large open area, a message offers a Paint background button. If no shape is near, a message says so.
 - **Saved work seems missing:** confirm you are using the same browser/device and have not cleared its site data.
 - **Stylus pressure varies:** support depends on what your browser and device report through Pointer Events.
 

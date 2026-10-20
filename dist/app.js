@@ -1,4 +1,4 @@
-import {regionAt,hexToRgb,shadeColour,blendPixel,isBackgroundArea,maskPixels,stabilisePoint} from './engine.js';
+import {regionAt,regionNear,hexToRgb,shadeColour,blendPixel,isBackgroundArea,maskPixels,stabilisePoint} from './engine.js';
 import {brand,applyCollectionNames,footerHeight,drawBrandFooter} from './brand.js';
 const $=id=>document.getElementById(id), icon=name=>`<svg><use href="#i-${name}"/></svg>`;
 const palettes={
@@ -63,6 +63,14 @@ let points=new Map(),gesture=null,panStart=null,dirty=false,toastTimer,activePoi
 let mediumLevels={oil:50,gouache:50,'coloured-pencil':50,watercolour:50},smoothing=.2,lastSmudgePoint=null,smudgeTip=null,smudgeBuffer=null;
 let storageEnabled=true;try{storageEnabled=localStorage.getItem('chromalie-save-work')!=='off';}catch(e){}
 function toast(s){$('toast').textContent=s;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3500);}
+// A message with one button, kept on screen longer, for a refusal the visitor can fix with a tap. The toast
+// ignores the pointer by default, so it takes events only while it carries a button.
+function toastAction(text,label,action,ms=9000){
+ const t=$('toast');t.textContent='';const span=document.createElement('span');span.textContent=text;const b=document.createElement('button');b.type='button';b.className='toast-action';b.textContent=label;
+ b.onclick=()=>{t.classList.remove('show','has-action');clearTimeout(toastTimer);action();};
+ t.append(span,b);t.classList.add('show','has-action');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show','has-action'),ms);
+}
+function paintBackgroundOn(){const box=$('paint-background');box.checked=true;box.dispatchEvent(new Event('change'));toast('Paint background is on. Try the stroke again.');}
 function showInfo(title,html){$('dialog-title').textContent=title;$('dialog-content').innerHTML=html;$('info-dialog').showModal();}
 $('close-dialog').onclick=$('dialog-ok').onclick=()=> $('info-dialog').close();
 async function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('colour-room',1);req.onupgradeneeded=()=>{req.result.createObjectStore('artwork',{keyPath:'id'});req.result.createObjectStore('settings');};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
@@ -271,7 +279,7 @@ function makeMask(ids){mc.putImageData(new ImageData(maskPixels(labels,ids),mask
 function allowedArea(id){
  if(!id)return false;
  if(!$('paint-background').checked&&isBackgroundArea(id,regionAreas,regionEdges,labels.length)){
-  toast('This area reaches the page edge or covers much of the page. Turn on Paint background if you meant to colour it.');return false;
+  toastAction('This area reaches the page edge or covers much of the page, so it is kept clear.','Paint background',paintBackgroundOn);return false;
  }
  return true;
 }
@@ -437,10 +445,13 @@ function updateBrushPreview(){
  for(let x=20;x<c.width-20;x+=Math.max(1,radius*.14)){const y=31+Math.sin(x/42)*5;s.drawImage(image,x-radius,y-radius,radius*2,radius*2);}g.globalAlpha=opacity;g.drawImage(sample,0,0);g.globalAlpha=1;
 }
 function drawTo(p,renderNow=true){const last=lastPoint||p;const dist=Math.hypot(p.x-last.x,p.y-last.y),spacing=tool==='smudge'?Math.max(2,size*.22):Math.max(1,size*.12),steps=Math.max(1,Math.ceil(dist/spacing));for(let i=1;i<=steps;i++){const f=i/steps;stamp({x:last.x+(p.x-last.x)*f,y:last.y+(p.y-last.y)*f,pressure:last.pressure+(p.pressure-last.pressure)*f});}lastPoint=p;if(renderNow)render();}
+// How far from the first touch a stroke looks for a shape to stay in: half the brush plus a margin, so starting on an
+// outline or a sliver still paints the nearest shape, within limits that keep it from jumping to a different one.
+function strokeReach(){return Math.min(24,Math.max(6,Math.round(size/2)+4));}
 function beginStroke(p){
  if((mode==='auto'||selected.size)&&!regionReady){toast('The page is still preparing its shapes.');return;}
  if(selected.size){makeMask(selected);strokeMask=true;}
- else if(mode==='auto'){const id=regionAt(labels,canvas.width,canvas.height,p.x,p.y);if(!allowedArea(id))return;makeMask(new Set([id]));strokeMask=true;}
+ else if(mode==='auto'){const id=regionNear(labels,canvas.width,canvas.height,p.x,p.y,strokeReach());if(!id){toast('No shape here. Start the stroke inside a shape, or turn In the lines off to paint anywhere.');return;}if(!allowedArea(id))return;makeMask(new Set([id]));strokeMask=true;}
  else strokeMask=false;
  strokeBefore=pc.getImageData(0,0,paint.width,paint.height);sc.clearRect(0,0,stroke.width,stroke.height);strokeActive=true;lastPoint=p;lastSmudgePoint=null;smudgeTip=null;smudgeBuffer=null;stampCounter=0;tip=null;stamp(p);render();
 }

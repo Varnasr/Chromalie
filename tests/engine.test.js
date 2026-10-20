@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {segmentRegions,regionAt,blendPixel,shadeColour,hexToRgb,isBackgroundArea,maskPixels,stabilisePoint} from '../dist/engine.js';
+import {segmentRegions,regionAt,regionNear,blendPixel,shadeColour,hexToRgb,isBackgroundArea,maskPixels,stabilisePoint} from '../dist/engine.js';
 function fixture(gap=false){const w=30,h=24,p=new Uint8ClampedArray(w*h*4).fill(255);const black=(x,y)=>{const i=(y*w+x)*4;p[i]=p[i+1]=p[i+2]=0;};for(let x=3;x<=26;x++){black(x,3);black(x,20);}for(let y=3;y<=20;y++){black(3,y);black(26,y);if(!gap||y!==10)black(15,y);}return {w,h,p};}
 test('Enclosed sections have independent labels and an outside area',()=>{const {w,h,p}=fixture();const {labels}=segmentRegions(p,w,h,false);const a=regionAt(labels,w,h,8,10),b=regionAt(labels,w,h,21,10),outside=regionAt(labels,w,h,0,0);assert.ok(a&&b&&outside);assert.notEqual(a,b);assert.notEqual(a,outside);assert.equal(labels[10*w+15],0);});
 test('Tiny gap protection stops a one pixel leak',()=>{const {w,h,p}=fixture(true),a=segmentRegions(p,w,h,false),b=segmentRegions(p,w,h,true);assert.equal(regionAt(a.labels,w,h,8,10),regionAt(a.labels,w,h,21,10));assert.notEqual(regionAt(b.labels,w,h,8,10),regionAt(b.labels,w,h,21,10));});
@@ -21,4 +21,21 @@ test('Tapping an outline chooses the nearest paintable region, not scan order',(
  assert.equal(regionAt(labels,w,h,6,6),2);
  assert.equal(regionAt(labels,w,h,7,6),2);
  assert.equal(regionAt(labels,w,h,12,12),0); // farther than the four-pixel lookup radius
+});
+
+test('A stroke that begins on an outline reaches the nearest shape within its wider radius',()=>{
+ const w=44,h=40,labels=new Uint32Array(w*h);
+ for(let y=10;y<30;y++)for(let x=10;x<18;x++)labels[y*w+x]=1; // shape 1, right edge at x=17
+ for(let y=10;y<30;y++)for(let x=28;x<38;x++)labels[y*w+x]=2; // shape 2, left edge at x=28
+ // A thick outline fills x=18..27. At x=22 shape 1 is five pixels away and shape 2 six.
+ assert.equal(regionAt(labels,w,h,22,20),0,'a tap reaches four pixels, so it finds nothing');
+ assert.equal(regionNear(labels,w,h,22,20,4),0,'radius 4 is the tap reach');
+ assert.equal(regionNear(labels,w,h,22,20,6),1,'radius 6 finds both and the nearer one, shape 1, wins');
+ assert.equal(regionNear(labels,w,h,25,20,6),2,'at x=25 shape 2 is three pixels away and shape 1 eight');
+ assert.equal(regionNear(labels,w,h,15,20,1),1,'a point already inside a shape is that shape, whatever the radius');
+ assert.equal(regionNear(labels,w,h,-1,20,24),0);assert.equal(regionNear(labels,w,h,w,20,24),0);
+});
+test('regionAt keeps its four pixel reach',()=>{
+ const w=20,h=20,labels=new Uint32Array(w*h);labels[10*w+14]=7;
+ assert.equal(regionAt(labels,w,h,10,10),7);assert.equal(regionAt(labels,w,h,9,10),0);
 });

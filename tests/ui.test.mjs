@@ -651,6 +651,27 @@ for (const [w, h] of [[1280, 900], [390, 844]]) {
   await chip.click();
   const again = await read();
   if (again.state === 'On' && again.pressed === 'true') ok('a second tap turns In the lines back On'); else fail(tag, 'state after two taps is ' + JSON.stringify(again));
+  // A stroke that begins in a large open area is refused, and the refusal now carries a button and stays long enough to read.
+  await page.evaluate(() => window.chromalieOpen('flowers-002')); await loaded(page); await page.waitForTimeout(2500);
+  const box2 = await page.locator('#canvas').boundingBox();
+  const dragFrom = async (fx, fy) => { const x = box2.x + box2.width * fx, y = box2.y + box2.height * fy; await page.mouse.move(x, y); await page.mouse.down(); for (let k = 1; k <= 12; k++) await page.mouse.move(x + k * 5, y + k * 2); await page.mouse.up(); await page.waitForTimeout(150); };
+  let refusedAt = null;
+  for (const [fx, fy] of [[.5, .45], [.35, .5], [.6, .4], [.5, .6], [.3, .3], [.7, .55], [.1, .1], [.9, .9], [.2, .8], [.8, .2]]) {
+    await page.evaluate(() => { const t = document.getElementById('toast'); t.textContent = ''; t.classList.remove('show', 'has-action'); });
+    await dragFrom(fx, fy);
+    if (await page.locator('#toast .toast-action').count()) { refusedAt = [fx, fy]; break; }
+  }
+  if (!refusedAt) fail(tag, 'no stroke started in open background was refused with a button');
+  else {
+    ok('a stroke that begins in open background is refused with a Paint background button');
+    await page.waitForTimeout(5000);
+    if (await page.locator('#toast.show .toast-action').count()) ok('the refusal stays on screen for longer than the old 3.5 seconds'); else fail(tag, 'the refusal disappeared within five seconds');
+    const beforeBackground = await artworkHash();
+    await page.locator('#toast .toast-action').click();
+    if (await page.evaluate(() => document.getElementById('paint-background').checked)) ok('the button turns Paint background on'); else fail(tag, 'the button did not turn Paint background on');
+    await dragFrom(...refusedAt);
+    if ((await artworkHash()) !== beforeBackground) ok('the same stroke then paints the background'); else fail(tag, 'the stroke still did not paint after Paint background was turned on');
+  }
   await audit(page, tag);
   await ctx.close();
 }
