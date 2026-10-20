@@ -8,7 +8,8 @@ export const collectionNames={
  cars:{title:'Sunday drives',subject:'Classic cars'},
  dragons:{title:'Here be dragons',subject:'Dragons'},
  cats:{title:'Velvet paws',subject:'Cats'},
- india:{title:'Around India',subject:'India'}
+ india:{title:'Around India',subject:'India'},
+ festivals:{title:'Festivals of India',subject:'Festivals'}
 };
 export function applyCollectionNames(catalog){
  for(const book of catalog.books){const name=collectionNames[book.id];if(name){book.originalTitle=book.originalTitle||book.title;Object.assign(book,name);}}

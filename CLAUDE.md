@@ -15,7 +15,7 @@ is not a finished feature or a verified release.
 
 ```bash
 python3 scripts/import-assets.py          # imports and verifies the approved artwork
-node --test tests/engine.test.js           # colouring engine
+node --test tests/engine.test.js tests/catalog.test.js           # colouring engine
 for f in dist/*.js; do node --check "$f"; done
 node tests/ui.test.mjs                    # browser test, needs playwright-core and Chromium
 ```

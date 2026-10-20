@@ -14,7 +14,7 @@ jobs:
         run: |
           for file in dist/*.js; do node --check "$file"; done
       - name: Test colouring engine
-        run: node --test tests/engine.test.js
+        run: node --test tests/engine.test.js tests/catalog.test.js
       - name: Install browser test tools
         run: |
           npm i --no-save playwright-core@1.56.1 axe-core@4.10.3

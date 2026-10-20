@@ -6665,6 +6665,226 @@
       "path": "dist/thumbs/india-046.webp",
       "bytes": 9748,
       "sha256": "edd3610802ea11afcde5a277834481b2d062292ca964d0375627b4f07e399b58"
+    },
+    {
+      "path": "dist/pages/festivals-001.webp",
+      "bytes": 214380,
+      "sha256": "fd1420336bdc0aedbf773183e80a8aa073ec353fe74f303a6932fb582215c197"
+    },
+    {
+      "path": "dist/thumbs/festivals-001.webp",
+      "bytes": 31476,
+      "sha256": "2ec293f71af6827c543e3749deed48a14f663b874fedf91afc92108b58b186b7"
+    },
+    {
+      "path": "dist/pages/festivals-002.webp",
+      "bytes": 207928,
+      "sha256": "ddb7ca1fce35c7162ee35955e601363d5b49f47c7baecc2cbaa048501096fa6c"
+    },
+    {
+      "path": "dist/thumbs/festivals-002.webp",
+      "bytes": 29828,
+      "sha256": "a22d979eab50b32cdeb644343273b9924644170753cf9aac3d03e338e3ba148d"
+    },
+    {
+      "path": "dist/pages/festivals-003.webp",
+      "bytes": 255878,
+      "sha256": "a0d32fa38faee7f00e00b6da13d7a4ab35a272fff913489071af337a45068274"
+    },
+    {
+      "path": "dist/thumbs/festivals-003.webp",
+      "bytes": 34420,
+      "sha256": "483ee0caeb138bdad4ce7c7aa1452d8a180a187b6b7387de35a2d0d17e7f2aa2"
+    },
+    {
+      "path": "dist/pages/festivals-004.webp",
+      "bytes": 213438,
+      "sha256": "0a21020a5a112a5a1f66501a9d97ad982cebdb8a35c069d2d7bc249182db9e58"
+    },
+    {
+      "path": "dist/thumbs/festivals-004.webp",
+      "bytes": 29436,
+      "sha256": "645854479a8b352821dee61f4352e1d89f4772f618bdcf8f741cd01f667c1ab2"
+    },
+    {
+      "path": "dist/pages/festivals-005.webp",
+      "bytes": 243326,
+      "sha256": "98c96ec9e07df45847e6cd45e2c689eb8720c079c93aded885db6cb50f75c7ac"
+    },
+    {
+      "path": "dist/thumbs/festivals-005.webp",
+      "bytes": 33870,
+      "sha256": "3b543858b2186d7af53419b50eca2c4afd1ec408c0c588dffdfc5d0e35a99f3d"
+    },
+    {
+      "path": "dist/pages/festivals-006.webp",
+      "bytes": 211600,
+      "sha256": "4de4365af70ef943b0cdd77caaaf23ce9c0b27600808b1d4c93beb586d550def"
+    },
+    {
+      "path": "dist/thumbs/festivals-006.webp",
+      "bytes": 30266,
+      "sha256": "844550ab6fc1c69ae8cc268b1503dbccfec39a8f9edc16e45365066488b1d536"
+    },
+    {
+      "path": "dist/pages/festivals-007.webp",
+      "bytes": 227894,
+      "sha256": "63725e93a67edc1dc65fa59b36702bcc81cc1172b3b8ae2d16f5316991250511"
+    },
+    {
+      "path": "dist/thumbs/festivals-007.webp",
+      "bytes": 32082,
+      "sha256": "1d5e0e163a4657d92aa3ece31928e62b147a8f0474fdea38c765cc276e026f45"
+    },
+    {
+      "path": "dist/pages/festivals-008.webp",
+      "bytes": 216060,
+      "sha256": "8fe254bb74f6deb5e7b74b5cdf4735118f5eda4cd0fcb74162a2e6f64ec118f0"
+    },
+    {
+      "path": "dist/thumbs/festivals-008.webp",
+      "bytes": 31810,
+      "sha256": "c86e7ff3f2c699a31425d4a63e76b3488e1e3919e4a88922f936163cfee5c9d1"
+    },
+    {
+      "path": "dist/pages/festivals-009.webp",
+      "bytes": 281694,
+      "sha256": "76f642fa21d4f210e0e69abb4c9b2d4d5d69432273b76293a0619494b3e56bcf"
+    },
+    {
+      "path": "dist/thumbs/festivals-009.webp",
+      "bytes": 37360,
+      "sha256": "8e3cb76537af309d860a10d5b26549ddfc74e15fc041015f9c8b63411b687351"
+    },
+    {
+      "path": "dist/pages/festivals-010.webp",
+      "bytes": 342270,
+      "sha256": "a7945fd42c8f00d98f0b1d223ba0c79d9c11c1f016387d929049b334853d9585"
+    },
+    {
+      "path": "dist/thumbs/festivals-010.webp",
+      "bytes": 39968,
+      "sha256": "7db8bef2c3c7d0dce1ca312cc2deaa9c34b4a98549b50ed22e2f4db65beca8dc"
+    },
+    {
+      "path": "dist/pages/festivals-011.webp",
+      "bytes": 246540,
+      "sha256": "84915222f74831d0284d492ebd876037258ef8c41363f69bbd1f8ec087658462"
+    },
+    {
+      "path": "dist/thumbs/festivals-011.webp",
+      "bytes": 33978,
+      "sha256": "24eb3b837061ae1c2905108ed526d832830e55c7f322976a24a44c1e37fff5f1"
+    },
+    {
+      "path": "dist/pages/festivals-012.webp",
+      "bytes": 252302,
+      "sha256": "2137c1fd024de91ba6a05259242329eb577e0588e4a6a3905ff6a440b6b956d1"
+    },
+    {
+      "path": "dist/thumbs/festivals-012.webp",
+      "bytes": 34434,
+      "sha256": "dace63f94debde299de7e1369f55d351f95b455e1168af65fc6ce6119385d31c"
+    },
+    {
+      "path": "dist/pages/festivals-013.webp",
+      "bytes": 325256,
+      "sha256": "7773df86479169d76d6e96e2229b7c77c57604ad35923f6656dea03274ce806e"
+    },
+    {
+      "path": "dist/thumbs/festivals-013.webp",
+      "bytes": 39278,
+      "sha256": "95d0c84f7b5214f67b5cf4dd9c122e84c8a747510cc7587a2d3540d20f5820eb"
+    },
+    {
+      "path": "dist/pages/festivals-014.webp",
+      "bytes": 348098,
+      "sha256": "611f7bb37afbca30a7494c091fb2ebd33603397791f412fba5481a6144bfbe32"
+    },
+    {
+      "path": "dist/thumbs/festivals-014.webp",
+      "bytes": 39158,
+      "sha256": "53e71d400c463afc68d964ec2ee079af96b2982c2d07e2f32e5acefe6deb55d5"
+    },
+    {
+      "path": "dist/pages/festivals-015.webp",
+      "bytes": 225382,
+      "sha256": "784d235ff3207a1b1de7af51175f7075bf31b90e46dfbbdb21fd37f37ddff08d"
+    },
+    {
+      "path": "dist/thumbs/festivals-015.webp",
+      "bytes": 32504,
+      "sha256": "0f01f2f9e351024aa28cb127bc9d6a889210adbd8358d94cbd1575c51fe86a6e"
+    },
+    {
+      "path": "dist/pages/festivals-016.webp",
+      "bytes": 281210,
+      "sha256": "9fb52c11e3dd717f2954344cc2ce42f4d408d26150da76e89f79bd5ed2995f04"
+    },
+    {
+      "path": "dist/thumbs/festivals-016.webp",
+      "bytes": 37676,
+      "sha256": "cb705563a5db9181024df809acd99eed272323d9f03a5b5b988366b918f68fa8"
+    },
+    {
+      "path": "dist/pages/festivals-017.webp",
+      "bytes": 270366,
+      "sha256": "9bc62ab2a8115d985f9a7b6a81fbaf0bf5134024b812b27f2f09e4d2dad27d99"
+    },
+    {
+      "path": "dist/thumbs/festivals-017.webp",
+      "bytes": 34222,
+      "sha256": "c4bda85767092b85364b7552a9eb76c52fd711d54155fabcaffcf336b2478f56"
+    },
+    {
+      "path": "dist/pages/festivals-018.webp",
+      "bytes": 315780,
+      "sha256": "74d304b0bc54699bdef261c26f340614de5d4cb49a11e1b6dbb002e817c5dc6e"
+    },
+    {
+      "path": "dist/thumbs/festivals-018.webp",
+      "bytes": 38026,
+      "sha256": "fc590816b27bcd46acfd24e90884886da2ea6beb7a016bd64754ada37160cb4c"
+    },
+    {
+      "path": "dist/pages/festivals-019.webp",
+      "bytes": 259684,
+      "sha256": "2d916bc96d8466fb4b5f5f3a7f3a628701690d3238d4cd63b7eb63cc5e785196"
+    },
+    {
+      "path": "dist/thumbs/festivals-019.webp",
+      "bytes": 33368,
+      "sha256": "6d11b3babb51e69aec7ef3ccbf565c99689e4016daa2a4c9417683b7e42a7a16"
+    },
+    {
+      "path": "dist/pages/festivals-020.webp",
+      "bytes": 304948,
+      "sha256": "655ee9e522cd931a09f27df8dcd34f8957ea7b543184c5eda7f8eadaa8294cf5"
+    },
+    {
+      "path": "dist/thumbs/festivals-020.webp",
+      "bytes": 38440,
+      "sha256": "42fee94c2570deafffb5b126828fa6804d2d663d66c5cb7c21f3a1a3dfa95db5"
+    },
+    {
+      "path": "dist/pages/festivals-021.webp",
+      "bytes": 342738,
+      "sha256": "60ce210c5075cc63845f61992dd7b31787705d10364fc9ed36b6c5fd9458695b"
+    },
+    {
+      "path": "dist/thumbs/festivals-021.webp",
+      "bytes": 38324,
+      "sha256": "f1d3b76ac2e0174e19cbd166adbece929700e985b078f8ac55a3f672dcd0b01e"
+    },
+    {
+      "path": "dist/pages/festivals-022.webp",
+      "bytes": 378824,
+      "sha256": "c23435828ad83c58bbc836cb7eba060567e5ca76a0bf3575ca48af0ecf95d272"
+    },
+    {
+      "path": "dist/thumbs/festivals-022.webp",
+      "bytes": 40770,
+      "sha256": "4f3aa633d77317b867eb11ff53766be940c642bf3823040988c3ca10daa7e421"
     }
   ]
 }
