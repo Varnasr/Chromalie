@@ -28,7 +28,7 @@ jobs:
           # Keep these files in the build; do not push from CI.
           echo "Artwork imported and verified against assets-manifest.json."
       - name: Check colouring engine
-        run: node --test tests/engine.test.js
+        run: node --test tests/engine.test.js tests/catalog.test.js
       - name: Check browser modules
         run: |
           node --check dist/app.js

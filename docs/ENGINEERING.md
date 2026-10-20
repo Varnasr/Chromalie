@@ -48,7 +48,7 @@ Netlify site `chromalie` publishes `dist/` from `main`. Its build command is `py
 
 `.github/workflows/deploy.yml` (`Publish Chromalie`) runs on pushes to `main` and on pull requests. It imports approved artwork, runs engine tests and browser tests, and stamps static assets. Screenshots are uploaded as workflow artifacts. `.github/workflows/studio-check.yml` runs the same engine and browser tests on pull requests. `.github/workflows/report-deployment-failure.yml` opens an issue only when the main test run fails.
 
-Tests: `node --test tests/engine.test.js`, `node tests/ui.test.mjs` with Playwright Chromium and axe-core installed, and JavaScript syntax checks. Read the workflow for exact versions and commands. Browser coverage includes several viewport sizes, but real touch/stylus testing is still required.
+Tests: `node --test tests/engine.test.js tests/catalog.test.js` (the second checks every catalogue page, its checksum and its credit), `node tests/ui.test.mjs` with Playwright Chromium and axe-core installed, and JavaScript syntax checks. Read the workflow for exact versions and commands. Browser coverage includes several viewport sizes, but real touch/stylus testing is still required.
 
 A green Actions run means the build and tests passed. It does not by itself prove that Netlify has published that commit. Check the Netlify deploy, the public site and the responsive screenshots before marking a batch complete.
 

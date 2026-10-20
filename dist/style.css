@@ -728,3 +728,8 @@ img,svg,video,canvas{max-width:100%}
 .m-pop .recent-colours #recent-swatches,.m-pop .colour-harmonies #harmony-swatches{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:8px;margin-top:6px}
 .m-pop .recent-colours .swatch,.m-pop .colour-harmonies .swatch{margin:0;width:30px;height:30px;flex:0 0 30px}
 .m-pop .recent-colours,.m-pop .colour-harmonies{margin:10px 0 4px}
+
+/* Keyboard pointer for colouring without a mouse; shown only while the page area has focus. */
+#viewport:focus-visible{outline:3px solid #1f5c52;outline-offset:-3px}
+#kb-cursor{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid #1f5c52;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 2px #fff,0 0 0 4px #1f5c52;pointer-events:none;z-index:5}
+#kb-cursor[hidden]{display:none}
