@@ -30,7 +30,7 @@ quick.innerHTML = `
     <button type="button" class="m-chip-btn m-watercolour" title="Paint with watercolour" aria-label="Choose Watercolour brush"><span aria-hidden="true">◉</span><span class="m-style-label">Watercolour styles</span></button>
     <button type="button" class="m-chip-btn" data-pop="size" aria-expanded="false"><span class="m-dot" aria-hidden="true"></span><span class="m-chip-label" data-for="size">Size</span></button>
     <button type="button" class="m-chip-btn" data-pop="shade" aria-expanded="false"><span class="m-colour" aria-hidden="true"></span><span>Colours</span></button>
-    <button type="button" class="m-chip-btn m-lines" aria-pressed="true">${line('M4 6h16M4 12h16M4 18h16')}<span class="m-chip-label" data-for="lines">In the lines</span></button>
+    <button type="button" class="m-chip-btn m-lines" aria-pressed="true">${line('M4 6h16M4 12h16M4 18h16')}<span class="m-chip-label" data-for="lines">In the lines</span><span class="m-state" aria-hidden="true">On</span></button>
     <button type="button" class="m-chip-btn" data-pop="more" aria-expanded="false">${line('M5 12h.01M12 12h.01M19 12h.01')}<span>More</span></button>
   </div>`;
 panel.prepend(quick);
@@ -217,10 +217,18 @@ quick.querySelector('.m-watercolour').onclick = () => {
  wcPanel.hidden=!opening;
  quick.querySelector('.m-watercolour').setAttribute('aria-expanded',String(opening));
 };
+// A switch, not an action: "In the lines" is on while strokes stay inside the shape where they begin,
+// and off (Freehand) when they may cross any line. The label never changes, the On or Off tag and
+// aria-pressed carry the state, and a message says what the tap did, because the old chip renamed
+// itself to "Freehand" and a tap meant to turn the feature on turned it off without notice.
+let linesToastTimer;
 quick.querySelector('.m-lines').onclick = () => {
   const next = currentMode() === 'auto' ? 'free' : 'auto';
   lastBrushMode = next;
   press(`.mode-tabs [data-mode="${next}"]`);
+  const t = $('toast');
+  t.textContent = next === 'auto' ? 'In the lines is on. Paint stays inside the shape where you start.' : 'In the lines is off. Paint can go anywhere, over the lines.';
+  t.classList.remove('has-action'); t.classList.add('show'); clearTimeout(linesToastTimer); linesToastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 };
 
 // Fold-out strips ------------------------------------------------------------
@@ -377,7 +385,9 @@ function sync() {
   quick.querySelector('.m-colour').style.background = $('current-colour').style.background
     || (activeSwatch && (activeSwatch.style.background || getComputedStyle(activeSwatch).backgroundColor)) || '';
   const lines = quick.querySelector('.m-lines');
-  lines.querySelector('[data-for="lines"]').textContent = lastBrushMode === 'free' ? 'Freehand' : 'In the lines';
+  lines.querySelector('[data-for="lines"]').textContent = 'In the lines';
+  lines.querySelector('.m-state').textContent = lastBrushMode === 'free' ? 'Off' : 'On';
+  lines.classList.toggle('is-off', lastBrushMode === 'free');
   lines.setAttribute('aria-pressed', String(lastBrushMode !== 'free'));
   lines.classList.toggle('dim', kind !== 'brush');
 }

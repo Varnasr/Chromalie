@@ -619,6 +619,63 @@ for (const [w, h] of [[1280, 900], [390, 844]]) {
   await ctx.close();
 }
 
+// "In the lines" is a switch whose label never changes. Tapping it used to rename it "Freehand", so a tap meant to turn
+// the feature on turned it off without notice and paint crossed the lines.
+{
+  const tag = 'in the lines switch 390x844';
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  await ctx.addInitScript(() => { try { localStorage.setItem('chromalie-storage-notice', 'seen'); localStorage.setItem('chromalie-tour', 'done'); } catch (e) {} });
+  const page = await ctx.newPage();
+  await page.goto(base, { waitUntil: 'networkidle' });
+  await page.click('#hero-start');
+  await page.locator('.page-card').nth(1).click();
+  await loaded(page);
+  await page.waitForTimeout(1500);
+  if (await page.locator('.m-rail-toggle').isVisible()) await page.locator('.m-rail-toggle').click();
+  const chip = page.locator('.m-lines');
+  const read = async () => ({ label: (await chip.locator('.m-chip-label').textContent()).trim(), state: (await chip.locator('.m-state').textContent()).trim(), pressed: await chip.getAttribute('aria-pressed') });
+  const on = await read();
+  if (on.label === 'In the lines' && on.state === 'On' && on.pressed === 'true') ok('In the lines starts On, with a fixed label'); else fail(tag, 'starting state is ' + JSON.stringify(on));
+  const artworkHash = () => page.evaluate(async () => { const { blob } = await window.chromalieArtwork(); const buf = new Uint8Array(await blob.arrayBuffer()); let h = 2166136261; for (let i = 0; i < buf.length; i++) h = Math.imul(h ^ buf[i], 16777619) >>> 0; return h; });
+  const box = await page.locator('#canvas').boundingBox();
+  const drag = async () => { const x = box.x + box.width * .3, y = box.y + box.height * .45; await page.mouse.move(x, y); await page.mouse.down(); for (let k = 1; k <= 30; k++) await page.mouse.move(x + k * 6, y + k * 3); await page.mouse.up(); await page.waitForTimeout(200); };
+  await drag(); const inLines = await artworkHash();
+  await page.evaluate(() => document.getElementById('undo').click()); await page.waitForTimeout(200);
+  await chip.click();
+  const off = await read();
+  const toast = await page.locator('#toast').textContent();
+  if (off.label === 'In the lines' && off.state === 'Off' && off.pressed === 'false') ok('tapping In the lines turns it Off and keeps its label'); else fail(tag, 'state after one tap is ' + JSON.stringify(off));
+  if (/off/i.test(toast) && /over the lines/i.test(toast)) ok('a message says paint can now cross the lines'); else fail(tag, 'no message after turning In the lines off: ' + toast);
+  await drag(); const freehand = await artworkHash();
+  if (freehand !== inLines) ok('the same stroke paints differently with In the lines On and Off'); else fail(tag, 'the same stroke gave an identical result with In the lines On and Off');
+  await chip.click();
+  const again = await read();
+  if (again.state === 'On' && again.pressed === 'true') ok('a second tap turns In the lines back On'); else fail(tag, 'state after two taps is ' + JSON.stringify(again));
+  // A stroke that begins in a large open area is refused, and the refusal now carries a button and stays long enough to read.
+  await page.evaluate(() => window.chromalieOpen('flowers-002')); await loaded(page); await page.waitForTimeout(2500);
+  const box2 = await page.locator('#canvas').boundingBox();
+  const dragFrom = async (fx, fy) => { const x = box2.x + box2.width * fx, y = box2.y + box2.height * fy; await page.mouse.move(x, y); await page.mouse.down(); for (let k = 1; k <= 12; k++) await page.mouse.move(x + k * 5, y + k * 2); await page.mouse.up(); await page.waitForTimeout(150); };
+  let refusedAt = null;
+  for (const [fx, fy] of [[.5, .45], [.35, .5], [.6, .4], [.5, .6], [.3, .3], [.7, .55], [.1, .1], [.9, .9], [.2, .8], [.8, .2]]) {
+    await page.evaluate(() => { const t = document.getElementById('toast'); t.textContent = ''; t.classList.remove('show', 'has-action'); });
+    await dragFrom(fx, fy);
+    if (await page.locator('#toast .toast-action').count()) { refusedAt = [fx, fy]; break; }
+  }
+  if (!refusedAt) fail(tag, 'no stroke started in open background was refused with a button');
+  else {
+    ok('a stroke that begins in open background is refused with a Paint background button');
+    await page.waitForTimeout(5000);
+    if (await page.locator('#toast.show .toast-action').count()) ok('the refusal stays on screen for longer than the old 3.5 seconds'); else fail(tag, 'the refusal disappeared within five seconds');
+    const beforeBackground = await artworkHash();
+    await page.locator('#toast .toast-action').click();
+    if (await page.evaluate(() => document.getElementById('paint-background').checked)) ok('the button turns Paint background on'); else fail(tag, 'the button did not turn Paint background on');
+    await dragFrom(...refusedAt);
+    if ((await artworkHash()) !== beforeBackground) ok('the same stroke then paints the background'); else fail(tag, 'the stroke still did not paint after Paint background was turned on');
+  }
+  await audit(page, tag);
+  await ctx.close();
+}
+
 await browser.close();
 server.close();
 

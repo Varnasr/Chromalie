@@ -58,15 +58,17 @@ export function stabilisePoint(previous,target,smoothing){
  return {x:previous.x+(target.x-previous.x)*follow,y:previous.y+(target.y-previous.y)*follow,pressure:target.pressure};
 }
 
-export function regionAt(labels,width,height,x,y){
+export function regionAt(labels,width,height,x,y){return regionNear(labels,width,height,x,y,4);}
+// The paintable shape nearest to (x,y), looking out as far as radius pixels. A stroke that begins on an outline
+// or in a sliver too small to hit uses a wider reach than a tap, which is four pixels. Returns 0 when nothing is that close.
+export function regionNear(labels,width,height,x,y,radius){
  x=Math.round(x);y=Math.round(y);
  if(x<0||y<0||x>=width||y>=height)return 0;
  const id=labels[y*width+x];if(id)return id;
- // For taps on ink or antialiased borders, choose the geometrically nearest
- // paintable pixel. Scan the whole search window: iteration order must not
- // make a farther neighbouring shape win over a closer one.
+ // Scan the whole window: iteration order must not make a farther
+ // neighbouring shape win over a closer one.
  let nearest=0, bestDistance=Infinity;
- for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+ for(let dy=-radius;dy<=radius;dy++)for(let dx=-radius;dx<=radius;dx++){
   const xx=x+dx,yy=y+dy;
   if(xx<0||yy<0||xx>=width||yy>=height)continue;
   const candidate=labels[yy*width+xx];
@@ -75,7 +77,6 @@ export function regionAt(labels,width,height,x,y){
  }
  return nearest;
 }
-
 export function hexToRgb(hex){return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));}
 export function shadeColour(hex,amount){
  const rgb=hexToRgb(hex),t=amount>0?255:0,f=Math.abs(amount)/100;

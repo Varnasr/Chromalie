@@ -733,3 +733,12 @@ img,svg,video,canvas{max-width:100%}
 #viewport:focus-visible{outline:3px solid #1f5c52;outline-offset:-3px}
 #kb-cursor{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:3px solid #1f5c52;border-radius:50%;background:rgba(255,255,255,.55);box-shadow:0 0 0 2px #fff,0 0 0 4px #1f5c52;pointer-events:none;z-index:5}
 #kb-cursor[hidden]{display:none}
+
+/* The In the lines switch shows On or Off beside its fixed label. Off is outlined in the warm accent so a stroke that can cross lines is never a surprise. */
+.m-lines .m-state{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:.72em;font-weight:700;background:#dfe8dc;color:#1f5c52}
+.m-lines.is-off .m-state{background:#fff3e6;color:#8a3b12;box-shadow:inset 0 0 0 1.5px #8a3b12}
+
+/* A toast that carries a button has to take taps; the plain toast stays click-through. */
+#toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:14px}
+.toast-action{background:#fff;color:#1b2b24;border:0;border-radius:5px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;min-height:36px}
+.toast-action:focus-visible{outline:3px solid #ffe44b;outline-offset:2px}
