@@ -7,12 +7,12 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-# Queue runs on the same ref instead of interrupting an active build.
-# GitHub retains at most one pending run per concurrency group.
+# A newer commit on a pull request cancels the older run; runs on main are queued,
+# never cancelled. GitHub retains at most one pending run per concurrency group.
 # Netlify site "chromalie" publishes dist/ from main. This workflow does not.
 concurrency:
   group: chromalie-ci-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   build:
     runs-on: ubuntu-latest

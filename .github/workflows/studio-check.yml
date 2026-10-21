@@ -1,7 +1,9 @@
 name: Validate painting studio
+# Manual only since 21 October 2026. On every pull request it ran the same engine
+# tests, syntax checks and browser audit as "Publish Chromalie" (which also imports
+# the artwork first), so each change paid for the browser test twice on the PR and
+# once more on merge. Run it by hand if you want it on its own.
 on:
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
