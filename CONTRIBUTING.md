@@ -7,7 +7,7 @@ Chromalie is a free, browser-based colouring studio from StoryWell Books. The pr
 You need Python 3, Node.js, and a modern Chromium browser for the full test suite.
 
 1. Clone this repository and work on a feature branch.
-2. Restore approved artwork: `python3 scripts/import-assets.py`. The importer validates byte lengths and SHA-256 checksums in `assets-manifest.json`.
+2. The artwork is not in this repository. It is third-party material kept in private storage, and the build fetches it with a credential only the maintainers hold. You do not need it to work on the engine: `node --test tests/engine.test.js tests/catalog.test.js` and `node --check` run without it. For the browser test you need your own licensed colouring pages in `dist/pages/` and `dist/thumbs/`, matching the names in `assets-manifest.json`, or the maintainers can run it for you on your pull request.
 3. Serve `dist/` using a local static HTTP server, for example `python3 -m http.server 8000 --directory dist`.
 4. Run engine tests: `node --test tests/engine.test.js tests/catalog.test.js`.
 5. Check JavaScript syntax: `node --check dist/app.js`.

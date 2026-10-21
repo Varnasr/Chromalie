@@ -20,3 +20,29 @@ For this repository that includes local saving and project import (a crafted pro
 
 Out of scope: denial of service, social engineering, and vulnerabilities in
 third-party services this site uses.
+
+## Content protection and fork policy
+
+See [LICENSE](../LICENSE). The code is MIT. The written content is CC BY-NC-ND 4.0.
+The artwork is not licensed here, and it is not in this repository.
+
+Forks may reuse the code under the MIT licence, with attribution. Forks may not
+redistribute or republish the written content, and may not use the colouring
+artwork, which belongs to its publishers. Forks must use their own storage for
+any artwork they are licensed to use and their own build credentials.
+
+## Takedown requests
+
+If you find a copy of StoryWell content or a mirror that carries the artwork:
+
+1. Note the URL and the files concerned.
+2. File a notice with GitHub at https://github.com/contact, following its
+   DMCA policy.
+3. Tell care@pinpointventures.in so the takedown is tracked.
+
+## The public key in the code
+
+`dist/count.js` carries a Supabase publishable key. It is public by design and
+can only call one function, which adds one to a daily tally. If you fork the
+project, use your own Supabase project and key.
+

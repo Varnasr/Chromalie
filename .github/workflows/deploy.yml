@@ -18,11 +18,16 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # Empty on pull requests from forks, which cannot read secrets. The steps that need the artwork skip then.
+      CHROMALIE_ART_INDEX_URL: ${{ secrets.CHROMALIE_ART_INDEX_URL }}
     steps:
       - uses: actions/checkout@v6
       - name: Import and verify the approved colouring artwork
+        if: env.CHROMALIE_ART_INDEX_URL != ''
         run: python3 scripts/import-assets.py
       - name: Verify imported artwork without creating a commit
+        if: env.CHROMALIE_ART_INDEX_URL != ''
         run: |
           # The approved artwork may be restored from its checksum manifest.
           # Keep these files in the build; do not push from CI.
@@ -43,12 +48,15 @@ jobs:
           node --check dist/share.js
           node --check dist/keep.js
       - name: Stamp asset addresses so phones load the new files
+        if: env.CHROMALIE_ART_INDEX_URL != ''
         run: python3 scripts/stamp-assets.py dist
       - name: Install the browser test's tools
+        if: env.CHROMALIE_ART_INDEX_URL != ''
         run: |
           npm i --no-save playwright-core@1.56.1 axe-core@4.10.3
           node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Browser test and accessibility audit
+        if: env.CHROMALIE_ART_INDEX_URL != ''
         run: node tests/ui.test.mjs
       - name: Preserve responsive screenshots for review
         if: always()
