@@ -21,6 +21,9 @@ jobs:
     env:
       # Empty on pull requests from forks, which cannot read secrets. The steps that need the artwork skip then.
       CHROMALIE_ART_INDEX_URL: ${{ secrets.CHROMALIE_ART_INDEX_URL }}
+      # The artwork-file test needs the artwork, so it skips on the same runs. Dependabot pull
+      # requests read Dependabot's own secrets, not these, and failed on a missing flowers-001.webp.
+      CHROMALIE_SKIP_ART_FILES: ${{ secrets.CHROMALIE_ART_INDEX_URL == '' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v6
       - name: Import and verify the approved colouring artwork

@@ -8,9 +8,15 @@ const sums=new Map(manifest.files.map(f=>[f.path,f]));
 test('Every collection count equals its pages and numbers run from 1 without gaps',()=>{
  for(const b of catalog.books){const pages=catalog.pages.filter(p=>p.book===b.id);assert.equal(pages.length,b.count,b.id);assert.deepEqual(pages.map(p=>p.number).sort((x,y)=>x-y),pages.map((_,i)=>i+1),b.id);}
 });
-test('Every page and thumbnail exists and matches the checksum in assets-manifest.json',()=>{
+// The artwork is in private storage. A run that cannot read the secret (a Dependabot or fork pull
+// request) sets CHROMALIE_SKIP_ART_FILES=1 in deploy.yml and still checks that every page is in the
+// manifest, but cannot check the files. Without the variable (local runs, main) a missing file fails.
+const skipFiles=process.env.CHROMALIE_SKIP_ART_FILES==='1';
+test('Every page and thumbnail exists and matches the checksum in assets-manifest.json',t=>{
+ if(skipFiles)t.diagnostic('artwork files not available in this run: manifest membership checked, files and checksums not');
  for(const p of catalog.pages)for(const rel of [p.image,p.thumb]){
   const path='dist/'+rel,entry=sums.get(path);assert.ok(entry,'not in manifest: '+path);
+  if(skipFiles)continue;
   const file=new URL('../'+path,import.meta.url);assert.ok(existsSync(file),'missing: '+path);
   const data=readFileSync(file);assert.equal(data.length,entry.bytes,path);assert.equal(createHash('sha256').update(data).digest('hex'),entry.sha256,path);
  }
