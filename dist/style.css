@@ -742,3 +742,4 @@ img,svg,video,canvas{max-width:100%}
 #toast.has-action{pointer-events:auto;display:flex;align-items:center;gap:14px}
 .toast-action{background:#fff;color:#1b2b24;border:0;border-radius:5px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;min-height:36px}
 .toast-action:focus-visible{outline:3px solid #ffe44b;outline-offset:2px}
+.footer-credit{margin:10px 0 0;color:var(--muted);font-size:14px;line-height:1.6}.footer-credit a{color:inherit;text-decoration:underline;text-underline-offset:3px}.legal-footer .footer-credit{margin:12px 0 0}
