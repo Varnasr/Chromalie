@@ -9,7 +9,7 @@ You need Python 3, Node.js, and a modern Chromium browser for the full test suit
 1. Clone this repository and work on a feature branch.
 2. The artwork is not in this repository. It is third-party material kept in private storage, and the build fetches it with a credential only the maintainers hold. You do not need it to work on the engine: `node --test tests/engine.test.js tests/catalog.test.js` and `node --check` run without it. For the browser test you need your own licensed colouring pages in `dist/pages/` and `dist/thumbs/`, matching the names in `assets-manifest.json`, or the maintainers can run it for you on your pull request.
 3. Serve `dist/` using a local static HTTP server, for example `python3 -m http.server 8000 --directory dist`.
-4. Run engine tests: `node --test tests/engine.test.js tests/catalog.test.js`.
+4. Run engine tests: `node --test tests/engine.test.js tests/catalog.test.js tests/seo.test.js`. After adding a page, run `python3 scripts/build-seo.py` to update its canonical tag and the sitemap.
 5. Check JavaScript syntax: `node --check dist/app.js`.
 6. Install browser test dependencies: `npm i --no-save playwright-core@1.56.1 axe-core@4.10.3`, install Chromium with Playwright, then run `node tests/ui.test.mjs`.
 
