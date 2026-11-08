@@ -1,3 +1,4 @@
+# Run scripts/build-seo.py after this script: it rewrites the pages and drops their canonical and Open Graph tags.
 from pathlib import Path
 from html import escape
 root=Path(__file__).resolve().parents[1]/'dist'
