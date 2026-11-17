@@ -1,5 +1,5 @@
 import {regionAt,regionNear,hexToRgb,shadeColour,blendPixel,isBackgroundArea,maskPixels,stabilisePoint} from './engine.js';
-import {brand,applyCollectionNames,footerHeight,drawBrandFooter} from './brand.js';
+import {brand,applyCollectionNames,footerHeight,drawBrandFooter,matchesSearch,MIN_SHAPE_PIXELS} from './brand.js';
 const $=id=>document.getElementById(id), icon=name=>`<svg><use href="#i-${name}"/></svg>`;
 const palettes={
  everyday:['#ed3b42','#f66b27','#ffb51b','#ffe44b','#78c83e','#16a765','#11b8ad','#16a4e0','#2766d7','#6549c8','#ad4fc2','#e84c99','#f4a7b9','#f5d2aa','#a9d6f2','#b7dfaa','#8b5c42','#6f747a','#ffffff','#20252b'],
@@ -76,28 +76,30 @@ $('close-dialog').onclick=$('dialog-ok').onclick=()=> $('info-dialog').close();
 async function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open('colour-room',1);req.onupgradeneeded=()=>{req.result.createObjectStore('artwork',{keyPath:'id'});req.result.createObjectStore('settings');};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
 function dbGet(store,key){if(!db)return Promise.resolve(null);return new Promise((resolve,reject)=>{const req=db.transaction(store).objectStore(store).get(key);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});}
 function dbPut(store,value,key){if(!db)return Promise.reject(Error('Storage unavailable'));return new Promise((resolve,reject)=>{const t=db.transaction(store,'readwrite');if(key===undefined)t.objectStore(store).put(value);else t.objectStore(store).put(value,key);t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error);});}
-async function loadSaved(){if(!db)return;await new Promise((resolve,reject)=>{const req=db.transaction('artwork').objectStore('artwork').openCursor();req.onsuccess=()=>{const c=req.result;if(!c)return resolve();const v=c.value;saved.set(v.id,{id:v.id,thumb:v.thumb,updated:v.updated});c.continue();};req.onerror=()=>reject(req.error);});updateWorkCount();customPalette=await dbGet('settings','palette')||[];const previousPalette=await dbGet('settings','selected-palette');if(previousPalette&&Object.hasOwn(palettes,previousPalette)||previousPalette==='custom')$('palette-select').value=previousPalette;}
-function updateWorkCount(){$('work-count').textContent=saved.size?`(${saved.size})`:'';}
+async function loadSaved(){if(!db)return;await new Promise((resolve,reject)=>{const req=db.transaction('artwork').objectStore('artwork').openCursor();req.onsuccess=()=>{const c=req.result;if(!c)return resolve();const v=c.value;saved.set(v.id,{id:v.id,thumb:v.thumb,updated:v.updated,finished:!!v.finished});c.continue();};req.onerror=()=>reject(req.error);});updateWorkCount();customPalette=await dbGet('settings','palette')||[];const previousPalette=await dbGet('settings','selected-palette');if(previousPalette&&Object.hasOwn(palettes,previousPalette)||previousPalette==='custom')$('palette-select').value=previousPalette;}
+function updateWorkCount(){$('work-count').textContent=saved.size?`(${saved.size})`:'';updatePageCount();}
 const blobOf=c=>new Promise((resolve,reject)=>c.toBlob(b=>b?resolve(b):reject(Error('Could not save image')),'image/png'));
 function compose(target){const c=target.getContext('2d');c.clearRect(0,0,target.width,target.height);c.fillStyle='white';c.fillRect(0,0,target.width,target.height);compositeLayers(target);c.globalCompositeOperation='multiply';c.drawImage(ink,0,0,target.width,target.height);c.globalCompositeOperation='source-over';}
 $('retry-save').onclick=()=>{if(!current||!storageEnabled)return;dirty=true;$('retry-save').hidden=true;$('save-state').textContent='Retrying save…';persist();};
-function scheduleSave(){changed++;if(!storageEnabled){dirty=false;$('save-state').textContent='Device saving is off. Download to keep.';return;}dirty=true;$('retry-save').hidden=true;$('save-state').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist(),850);}
+function scheduleSave(){changed++;hideLeft();updateProgress();if(!storageEnabled){dirty=false;$('save-state').textContent='Device saving is off. Download to keep.';return;}dirty=true;$('retry-save').hidden=true;$('save-state').textContent='Saving…';clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist(),850);}
 function persist(){
  clearTimeout(saveTimer);if(!storageEnabled){dirty=false;return saveChain;}if(!current||!dirty)return saveChain;
  const page=current,version=changed;dirty=false;
  const copy=document.createElement('canvas');copy.width=paint.width;copy.height=paint.height;copy.getContext('2d').drawImage(mergedPaint(),0,0);
  const layerCopies=paintLayers.map((layer,i)=>i===activeLayer?snapshotPaint():layer.canvas);const layerMeta=paintLayers.map(layer=>({name:layer.name,visible:layer.visible!==false,opacity:layer.opacity??1}));const thumb=document.createElement('canvas');thumb.width=200;thumb.height=Math.round(200*paint.height/paint.width);compose(thumb);
  saveChain=saveChain.catch(()=>{}).then(async()=>{
-  try{const [blob,small,...layerBlobs]=await Promise.all([blobOf(copy),blobOf(thumb),...layerCopies.map(blobOf)]);await dbPut('artwork',{id:page.id,blob,thumb:small,layers:layerBlobs,layerMeta,updated:Date.now()});saved.set(page.id,{id:page.id,thumb:small,updated:Date.now()});updateWorkCount();if(current?.id===page.id&&changed===version){$('retry-save').hidden=true;$('save-state').textContent='Saved on this device';}}
+  try{const [blob,small,...layerBlobs]=await Promise.all([blobOf(copy),blobOf(thumb),...layerCopies.map(blobOf)]);const finished=current?.id===page.id&&!!progress?.finished;await dbPut('artwork',{id:page.id,blob,thumb:small,layers:layerBlobs,layerMeta,finished,updated:Date.now()});saved.set(page.id,{id:page.id,thumb:small,updated:Date.now(),finished});updateWorkCount();if(current?.id===page.id&&changed===version){$('retry-save').hidden=true;$('save-state').textContent='Saved on this device';}}
   catch(e){if(current?.id===page.id){dirty=true;$('retry-save').hidden=false;$('save-state').textContent='Save failed. Download your work or retry.';toast('Your browser could not save this page. Download a copy to keep it.');}}
  });return saveChain;
 }
-function setView(next){view=next;visible=24;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('hero').hidden=view==='work';$('library-eyebrow').textContent=view==='work'?'YOUR SAVED PAGES':'THE COLOURING LIBRARY';$('library-title').textContent=view==='work'?'A little colour, kept for later.':'What will you colour today?';renderLibrary();}
+function setView(next){view=next;visible=24;document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('hero').hidden=view==='work';$('library-eyebrow').textContent=view==='work'?'YOUR SAVED PAGES':'THE COLOURING LIBRARY';$('library-title').textContent=view==='work'?'A little colour, kept for later.':'What will you colour today?';$('library').classList.toggle('is-work',view==='work');updatePageCount();renderLibrary();}
+// The pill beside the heading counts what the heading is about: the library, or the visitor's own saved pages.
+function updatePageCount(){if(!catalog.pages.length)return;$('page-count').textContent=view==='work'?`${saved.size} saved ${saved.size===1?'page':'pages'}`:`${catalog.pages.length} pages · ${catalog.books.length} collections`;$('library').classList.toggle('few-saved',saved.size<=12);}
 const urls=[];
 function renderLibrary(){
  urls.splice(0).forEach(u=>URL.revokeObjectURL(u));
  const q=$('search').value.toLowerCase().trim(),book=$('book-filter').value,level=$('detail-filter').value;
- filtered=catalog.pages.filter(p=>(category==='All'||p.category===category)&&(book==='all'||p.book===book)&&(level==='all'||p.level===level)&&(!q||`${p.title} ${p.subject} ${p.originalTitle} ${p.category}`.toLowerCase().includes(q))&&(view!=='work'||saved.has(p.id)));
+ filtered=catalog.pages.filter(p=>(category==='All'||p.category===category)&&(book==='all'||p.book===book)&&(level==='all'||p.level===level)&&(!q||matchesSearch(p,q))&&(view!=='work'||saved.has(p.id)));
  if(view==='work')filtered.sort((a,b)=>saved.get(b.id).updated-saved.get(a.id).updated);
  $('result-count').textContent=`${filtered.length} ${filtered.length===1?'page':'pages'}`;
  $('page-grid').replaceChildren();
@@ -105,7 +107,7 @@ function renderLibrary(){
   const b=document.createElement('button');b.className='page-card';b.setAttribute('aria-label',`Colour ${p.title}`);
   const item=saved.get(p.id);let thumb=p.thumb;
   if(view==='work'&&item?.thumb){thumb=URL.createObjectURL(item.thumb);urls.push(thumb);}
-  b.innerHTML=`<div class="page-preview"><div class="sheet-thumbnail"><img class="page-art" loading="lazy" decoding="async" src="${thumb}" alt="${p.title}, ${p.subject}"><div class="sheet-brand"><img src="wordmark.svg" alt="Chromalie"></div></div><span class="page-hover">${item?'Keep colouring':'Start colouring'}</span>${item?'<span class="saved-chip">Saved</span>':''}</div><h3>${p.title}</h3><div class="page-meta"><span>${p.subject}</span><span>${p.level==='Easy'?'Simpler':'Detailed'}</span></div>`;
+  b.innerHTML=`<div class="page-preview"><div class="sheet-thumbnail"><img class="page-art" loading="lazy" decoding="async" src="${thumb}" alt="${p.title}, ${p.subject}"><div class="sheet-brand"><img src="wordmark.svg" alt="Chromalie"></div></div><span class="page-hover">${item?'Keep colouring':'Start colouring'}</span>${item?`<span class="saved-chip">${item.finished?'Finished':'Saved'}</span>`:''}</div><h3>${p.title}</h3><div class="page-meta"><span>${p.series||p.subject}</span><span>${p.level}</span></div>`;
   if(view==='work')b.querySelector('.page-art').alt=`Your coloured ${p.title}`;
   b.onclick=()=>openPage(p);$('page-grid').append(b);
  }
@@ -529,7 +531,7 @@ function fillArea(p){
  pc.putImageData(im,0,0);remember(before);render();scheduleSave();
 }
 function pickColour(p){const x=Math.min(canvas.width-1,Math.max(0,Math.round(p.x))),y=Math.min(canvas.height-1,Math.max(0,Math.round(p.y)));const rgb=ctx.getImageData(x,y,1,1).data;setColour('#'+[...rgb].slice(0,3).map(c=>c.toString(16).padStart(2,'0')).join(''));selectTool(mode==='fill'?'fill':lastBrush);toast('Colour picked.');}
-function fitPage(){if(!current)return;const r=$('viewport').getBoundingClientRect(),foot=footerHeight(canvas.width),scale=Math.max(.03,Math.min((r.width-34)/canvas.width,(r.height-30)/(canvas.height+foot)));fitWidth=canvas.width*scale;fitHeight=(canvas.height+foot)*scale;$('canvas-wrap').style.width=`${fitWidth}px`;$('canvas-wrap').style.height=`${fitHeight}px`;$('page-brand').style.height=`${foot*scale}px`;$('page-brand').querySelector('img').style.width=`${canvas.width*.255*scale}px`;transform();}
+function fitPage(){if(!current)return;const r=$('viewport').getBoundingClientRect(),foot=footerHeight(canvas.width),narrow=r.width<700,scale=Math.max(.03,Math.min((r.width-(narrow?14:34))/canvas.width,(r.height-(narrow?14:30))/(canvas.height+foot)));fitWidth=canvas.width*scale;fitHeight=(canvas.height+foot)*scale;$('canvas-wrap').style.width=`${fitWidth}px`;$('canvas-wrap').style.height=`${fitHeight}px`;$('page-brand').style.height=`${foot*scale}px`;$('page-brand').querySelector('img').style.width=`${canvas.width*.255*scale}px`;transform();}
 function transform(){const r=$('viewport').getBoundingClientRect();panX=Math.max(-fitWidth*zoom/2,Math.min(fitWidth*zoom/2,panX));panY=Math.max(-fitHeight*zoom/2,Math.min(fitHeight*zoom/2,panY));$('canvas-wrap').style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`;$('zoom-fit').textContent=`${Math.round(zoom*100)}%`;}
 function setZoom(z){zoom=Math.max(.5,Math.min(6,z));transform();}
 $('zoom-in').onclick=()=>setZoom(zoom*1.25);$('zoom-out').onclick=()=>setZoom(zoom/1.25);$('zoom-fit').onclick=()=>{zoom=1;panX=panY=0;fitPage();};window.addEventListener('resize',fitPage);
@@ -575,25 +577,70 @@ function endPointer(e){
 vp.onpointerup=vp.onpointercancel=endPointer;vp.addEventListener('lostpointercapture',e=>{if(e.pointerId===activePointer)endPointer(e);});
 vp.addEventListener('wheel',e=>{e.preventDefault();setZoom(zoom*Math.exp(-e.deltaY*.0015));},{passive:false});
 async function prepareRegions(){
- if(!current)return;regionReady=false;labels=null;regionAreas=null;regionEdges=null;clearSelection();worker?.terminate();const mine=epoch;
+ if(!current)return;regionReady=false;labels=null;regionAreas=null;regionEdges=null;countable=null;hideLeft();clearSelection();worker?.terminate();const mine=epoch;
  $('loading').hidden=false;$('loading-text').textContent='Preparing the colouring areas…';
  const im=ic.getImageData(0,0,ink.width,ink.height);
  worker=new Worker('regions-worker.js',{type:'module'});
- worker.onmessage=({data})=>{if(mine!==epoch)return;if(data.error){regionReady=false;$('loading').hidden=true;updateTools();toast('Shape detection failed. Choose Freehand explicitly if you want to continue.');return;}labels=new Uint32Array(data.labels);regionAreas=new Uint32Array(data.areas);regionEdges=new Uint8Array(data.edge);regionReady=true;$('loading').hidden=true;worker.terminate();worker=null;};
+ worker.onmessage=({data})=>{if(mine!==epoch)return;if(data.error){regionReady=false;$('loading').hidden=true;updateTools();toast('Shape detection failed. Choose Freehand explicitly if you want to continue.');return;}labels=new Uint32Array(data.labels);regionAreas=new Uint32Array(data.areas);regionEdges=new Uint8Array(data.edge);regionReady=true;$('loading').hidden=true;worker.terminate();worker=null;countable=null;updateProgress();};
  worker.onerror=()=>{if(mine!==epoch)return;$('loading').hidden=true;updateTools();toast('Shape detection is unavailable. Choose Freehand explicitly if you want to continue.');};
  worker.postMessage({pixels:im.data.buffer,width:ink.width,height:ink.height,closeGaps:$('gap-protection').checked,gapRadius:Number($('gap-strength').value)},[im.data.buffer]);
 }
 $('gap-protection').onchange=()=>{finishStroke();prepareRegions();};
 $('gap-strength').onchange=()=>{finishStroke();prepareRegions();};
 $('paint-background').onchange=()=>{finishStroke();if(!$('paint-background').checked&&labels){for(const id of selected)if(isBackgroundArea(id,regionAreas,regionEdges,labels.length))selected.delete(id);updateSelection();}};
+// Progress. A page has an end: the pill over the page says how many shapes are coloured, a tap on it
+// marks the ones still empty, and colouring the last one opens the finish dialog. A shape counts when
+// it is not background and is at least MIN_SHAPE_PIXELS large (the rule scripts/count-shapes.mjs uses
+// for the catalogue), and it is coloured when at least half of it carries paint.
+let progress=null,progressSeen=false,wasFinished=false,countable=null,progressTimer,leftTimer;
+const leftCanvas=document.createElement('canvas');leftCanvas.id='left-overlay';leftCanvas.setAttribute('aria-hidden','true');leftCanvas.hidden=true;document.querySelector('.art-surface').append(leftCanvas);
+function measureProgress(){
+ if(!current||!regionReady||!labels)return null;
+ if(!countable){countable=[];for(let id=1;id<regionAreas.length;id++)if(regionAreas[id]>=MIN_SHAPE_PIXELS&&!isBackgroundArea(id,regionAreas,regionEdges,labels.length))countable.push(id);}
+ if(countable.length<10)return null;
+ const data=mergedPaint().getContext('2d').getImageData(0,0,paint.width,paint.height).data,painted=new Uint32Array(regionAreas.length);
+ for(let i=0;i<labels.length;i++)if(data[i*4+3]>24)painted[labels[i]]++;
+ return {total:countable.length,left:countable.filter(id=>painted[id]<regionAreas[id]*.5)};
+}
+function updateProgress(){
+ clearTimeout(progressTimer);
+ progressTimer=setTimeout(()=>{
+  const m=measureProgress(),pill=$('progress-pill');
+  if(!m){progress=null;pill.hidden=true;return;}
+  const done=m.total-m.left.length,finished=!m.left.length;progress={total:m.total,left:m.left.length,finished};
+  pill.hidden=false;pill.classList.toggle('finished',finished);pill.style.setProperty('--p',`${Math.round(done/m.total*360)}deg`);
+  pill.querySelector('span').textContent=finished?'Finished':`${done} of ${m.total}`;
+  pill.setAttribute('aria-label',finished?`All ${m.total} shapes are coloured. Open the finished page choices.`:`${done} of ${m.total} shapes coloured. Show the shapes that are left.`);
+  if(finished&&progressSeen&&!wasFinished)openFinish();
+  wasFinished=finished;progressSeen=true;
+ },450);
+}
+function hideLeft(){clearTimeout(leftTimer);leftCanvas.hidden=true;}
+function showLeft(){
+ finishStroke();const m=measureProgress();if(!m)return;
+ if(!m.left.length){openFinish();return;}
+ const set=new Set(m.left),g=leftCanvas.getContext('2d'),im=g.createImageData(leftCanvas.width,leftCanvas.height),few=m.left.length<=40,mid=new Map();
+ for(let i=0;i<labels.length;i++){const id=labels[i];if(!set.has(id))continue;im.data[i*4]=214;im.data[i*4+1]=40;im.data[i*4+2]=130;im.data[i*4+3]=150;if(few){const c=mid.get(id)||[0,0,0];c[0]+=i%leftCanvas.width;c[1]+=Math.floor(i/leftCanvas.width);c[2]++;mid.set(id,c);}}
+ g.putImageData(im,0,0);
+ // When few are left they are small and easy to miss, so each also gets a ring.
+ if(few){g.strokeStyle='#d62882';g.lineWidth=Math.max(5,leftCanvas.width/220);for(const [x,y,n] of mid.values()){g.beginPath();g.arc(x/n,y/n,Math.sqrt(n/Math.PI)+leftCanvas.width/45,0,Math.PI*2);g.stroke();}}
+ leftCanvas.hidden=false;clearTimeout(leftTimer);leftTimer=setTimeout(hideLeft,7000);
+ toast(`${m.left.length} ${m.left.length===1?'shape is':'shapes are'} left, marked in pink.`);
+}
+function openFinish(){if(!current||$('finish-dialog').open)return;$('finish-text').textContent=`You coloured all ${progress?.total||''} shapes of ${current.title}. It is saved in My work.`.replace('all  shapes','every shape');$('finish-dialog').showModal();}
+$('progress-pill').onclick=showLeft;
+$('finish-keep').onclick=()=>$('finish-dialog').close();
+$('finish-download').onclick=()=>{$('finish-dialog').close();$('download').click();};
+$('finish-share').onclick=()=>{$('finish-dialog').close();$('share-page').click();};
+$('finish-next').onclick=()=>{$('finish-dialog').close();$('next-page').click();};
 // The journal (journal.js) reads the catalogue and reopens pages through these two.
 window.chromalieCatalog=()=>catalog;
 window.chromalieOpen=id=>{const p=catalog.pages.find(x=>x.id===id);if(p)openPage(p);};
-async function openPage(p){
+async function openPage(p,fromAddress=false){
  window.dispatchEvent(new CustomEvent('chromalie:open',{detail:p}));
- finishStroke();await persist();if(storageEnabled&&dirty){toast('This page could not be saved. Download your painting before switching pages.');return;}const mine=++epoch;current=p;dirty=false;$('retry-save').hidden=true;undoStack=[];redoStack=[];selected.clear();regionReady=false;labels=null;updateHistory();
+ finishStroke();await persist();if(storageEnabled&&dirty){toast('This page could not be saved. Download your painting before switching pages.');return;}const mine=++epoch;current=p;dirty=false;addressFor(p,fromAddress);$('retry-save').hidden=true;undoStack=[];redoStack=[];selected.clear();regionReady=false;labels=null;updateHistory();
  $('storage-notice').hidden=true;$('home').hidden=true;$('studio').hidden=false;document.body.style.overflow='hidden';$('art-title').textContent=p.title;$('page-position').textContent=`Page ${p.number} · ${catalog.books.find(b=>b.id===p.book)?.title||''}`;const credit=$('page-credit');if(credit){credit.hidden=!p.credit;credit.textContent=p.credit?`Art: ${p.credit}`:'';if(p.creditUrl)credit.href=p.creditUrl;}$('save-state').textContent=storageEnabled?'Ready to colour':'Device saving is off. Download to keep.';$('loading').hidden=false;$('loading-text').textContent='Opening your page…';
- for(const c of [canvas,paint,ink,stroke,mask,clipped,selectionCanvas,eraserPreview]){c.width=p.width;c.height=p.height;}
+ for(const c of [canvas,paint,ink,stroke,mask,clipped,selectionCanvas,eraserPreview,leftCanvas]){c.width=p.width;c.height=p.height;}progress=null;progressSeen=false;wasFinished=false;countable=null;$('progress-pill').hidden=true;hideLeft();
  // Automatic remains automatic for every collection. Freehand is only selected
  // by the visitor, never silently enabled for shaded drawings.
  zoom=1;panX=panY=0;fitPage();updateTools();
@@ -602,10 +649,37 @@ async function openPage(p){
   const entry=await dbGet('artwork',p.id);if(mine!==epoch)return;
   if(entry?.blob){if(Array.isArray(entry.layers)&&entry.layers.length>0&&entry.layers.length<=5){paintLayers=[];for(const blob of entry.layers){const bitmap=await createImageBitmap(blob);const c=document.createElement('canvas');c.width=paint.width;c.height=paint.height;c.getContext('2d').drawImage(bitmap,0,0);bitmap.close();paintLayers.push({name:entry.layerMeta?.[paintLayers.length]?.name||'Layer '+(paintLayers.length+1),canvas:c,visible:entry.layerMeta?.[paintLayers.length]?.visible!==false,opacity:entry.layerMeta?.[paintLayers.length]?.opacity??1});}activeLayer=paintLayers.length-1;undoStack=[];redoStack=[];updateHistory();pc.drawImage(paintLayers[activeLayer].canvas,0,0);drawLayerControls();}else{const bitmap=await createImageBitmap(entry.blob);if(mine!==epoch){bitmap.close();return;}pc.drawImage(bitmap,0,0);bitmap.close();resetLayers();}$('save-state').textContent=storageEnabled?'Saved on this device':'Device saving is off. Download to keep.';}
   render();prepareRegions();$('exit-studio').focus({preventScroll:true});
- }catch(e){if(mine!==epoch)return;$('loading').hidden=true;toast('This page could not open. Please try another page.');await exitStudio();}
+ }catch(e){if(mine!==epoch)return;$('loading').hidden=true;toast('This page could not open. Please try another page.');await leaveStudio();}
 }
-async function exitStudio(){finishStroke();await persist();if(storageEnabled&&dirty){toast('Saving failed. Download your painting before leaving.');return;}epoch++;worker?.terminate();worker=null;current=null;points.clear();gesture=null;panStart=null;$('studio').hidden=true;$('home').hidden=false;document.body.style.overflow='';renderLibrary();$('library').scrollIntoView();$('library-title').tabIndex=-1;$('library-title').focus({preventScroll:true});}
-$('exit-studio').onclick=exitStudio;
+// Closes the studio and shows the library. Returns false, and stays, when the page could not be saved.
+async function closeStudio(){finishStroke();await persist();if(storageEnabled&&dirty){toast('Saving failed. Download your painting before leaving.');return false;}epoch++;worker?.terminate();worker=null;current=null;points.clear();gesture=null;panStart=null;hideLeft();$('studio').hidden=true;$('home').hidden=false;document.body.style.overflow='';document.title=siteTitle;renderLibrary();$('library').scrollIntoView();$('library-title').tabIndex=-1;$('library-title').focus({preventScroll:true});return true;}
+// Each open page has its own address, #page/<id>, so the browser's Back button returns to the library,
+// a reload reopens the page, and the address can be kept or sent to someone. Opening a page from the
+// library adds one history entry; moving to another page from inside the studio replaces it, so Back
+// is always one step to the library.
+const siteTitle=document.title,pageHash=()=>/^#page\/([a-z0-9-]+)$/.exec(location.hash)?.[1];
+function addressFor(p,fromAddress){
+ document.title=`${p.title} · Chromalie`;
+ if(fromAddress)return;
+ const hash='#page/'+p.id;
+ try{if(history.state?.chromaliePage)history.replaceState({...history.state,chromaliePage:p.id},'',hash);else history.pushState({chromaliePage:p.id,fromLibrary:true},'',hash);}catch(e){}
+}
+// The Library button. Going back in history keeps Back and the button in step; a page reached by its
+// address has no library entry behind it, so the address is cleared in place.
+async function leaveStudio(){
+ if(history.state?.chromaliePage&&history.state.fromLibrary&&pageHash()){history.back();return;}
+ if(await closeStudio())try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+}
+window.addEventListener('popstate',async()=>{
+ const id=pageHash();
+ if(id){if(current?.id!==id){const p=catalog.pages.find(x=>x.id===id);if(p)openPage(p,true);}return;}
+ if(!current)return;
+ for(const d of document.querySelectorAll('dialog[open]'))d.close();
+ const page=current;
+ // Leaving failed because the page could not be saved: put its address back so the two still agree.
+ if(!(await closeStudio()))try{history.pushState({chromaliePage:page.id,fromLibrary:true},'','#page/'+page.id);}catch(e){}
+});
+$('exit-studio').onclick=leaveStudio;
 $('focus-mode').onclick=()=>{const active=$('studio').classList.toggle('studio-focus');$('focus-mode').textContent=active?'Tools':'Focus';$('focus-mode').setAttribute('aria-pressed',String(active));requestAnimationFrame(fitPage);};
 $('next-page').onclick=()=>{if(!current)return;const pages=catalog.pages.filter(p=>p.book===current.book),i=pages.findIndex(p=>p.id===current.id);openPage(pages[(i+1)%pages.length]);};
 // Non-destructive finishing options: these affect exported art, not editable paint.
@@ -672,9 +746,48 @@ function applyFinishing(c,w,h){
  }
  c.restore();
 }
-function brandedArtwork(){const art=document.createElement('canvas');art.width=canvas.width;art.height=canvas.height;compose(art);applyFinishing(art.getContext('2d'),art.width,art.height);const out=document.createElement('canvas');out.width=canvas.width;out.height=canvas.height+footerHeight(canvas.width);const c=out.getContext('2d');c.drawImage(art,0,0);drawBrandFooter(c,out.width,canvas.height,current);return out;}
-$('download').onclick=async()=>{const button=$('download');if(button.disabled)return;button.disabled=true;try{finishStroke();if(!current)throw Error('No page is open');const page=current,out=brandedArtwork();await persist();const blob=await blobOf(out),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${brand.slug}-${page.id}.png`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('Your artwork is ready to download.');window.dispatchEvent(new CustomEvent('chromalie:download',{detail:page}));}catch(error){toast('Could not prepare the download. Try again or save an editable project.');console.error('Artwork export failed',error);}finally{button.disabled=false;}};
-$('print').onclick=()=>{finishStroke();window.dispatchEvent(new CustomEvent('chromalie:print',{detail:current}));const out=brandedArtwork();const im=document.createElement('img');im.className='print-art';im.src=out.toDataURL('image/png');document.body.append(im);im.onload=()=>{window.print();setTimeout(()=>im.remove(),1000);};};
+// Downloads and prints are drawn at twice the page's pixels. The artwork is 1,400 pixels at most, which
+// is about 130 dots per inch on A4, and a printer enlarging that draws soft, stepped lines. Here the
+// outlines are enlarged smoothly and, on line drawings, their grey edge is tightened, so a line prints
+// with a clean edge. This adds no detail the drawing does not have; a larger original is the only
+// thing that does. Shaded drawings are enlarged and left as they are, because the curve would darken
+// their shading. Paint is enlarged as it is.
+function inkAt(scale){
+ const c=document.createElement('canvas');c.width=ink.width*scale;c.height=ink.height*scale;
+ const g=c.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';g.drawImage(ink,0,0,c.width,c.height);
+ const sharpen=scale>1&&current?.style==='line';
+ if(sharpen){
+  // Average each pixel with its four neighbours first (drawn at 1/2, 1/3, 1/4, 1/5 so all five weigh
+  // the same). That turns the one-pixel steps of the original into a grey slope, which the curve
+  // below then cuts along a smooth edge.
+  const soft=document.createElement('canvas');soft.width=c.width;soft.height=c.height;soft.getContext('2d').drawImage(c,0,0);
+  [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy],k)=>{g.globalAlpha=1/(k+2);g.drawImage(soft,dx,dy);});g.globalAlpha=1;
+ }
+ // Dark stays dark, paper stays paper, and the ramp between them is steeper.
+ const curve=new Uint8ClampedArray(256);for(let v=0;v<256;v++)curve[v]=!sharpen?v:v<=120?0:v>=215?v:Math.round((v-120)*215/95);
+ // `under` marks every pixel that is outline and so carries no paint. Paint stops where the outline
+ // begins, which leaves the outline's pale edge with white behind it: a thin light fringe between a
+ // colour and its line. The export slides the paint one pixel under the outline to close it.
+ const im=g.getImageData(0,0,c.width,c.height),d=im.data,under=new ImageData(c.width,c.height),u=under.data;
+ for(let i=0;i<d.length;i+=4){if(d[i]+d[i+1]+d[i+2]<714)u[i+3]=255;d[i]=curve[d[i]];d[i+1]=curve[d[i+1]];d[i+2]=curve[d[i+2]];}
+ g.putImageData(im,0,0);
+ const mask=document.createElement('canvas');mask.width=c.width;mask.height=c.height;mask.getContext('2d').putImageData(under,0,0);
+ return {lines:c,mask};
+}
+function brandedArtwork(scale=1){
+ const w=canvas.width*scale,h=canvas.height*scale,make=()=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=true;g.imageSmoothingQuality='high';return [c,g];};
+ const {lines,mask}=inkAt(scale),[colour,cg]=make(),[spread,sg]=make(),[art,a]=make();
+ compositeLayers(colour);
+ for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]])sg.drawImage(colour,dx*scale,dy*scale);
+ sg.globalCompositeOperation='destination-in';sg.drawImage(mask,0,0);
+ a.fillStyle='white';a.fillRect(0,0,w,h);a.drawImage(spread,0,0);a.drawImage(colour,0,0);a.globalCompositeOperation='multiply';a.drawImage(lines,0,0);a.globalCompositeOperation='source-over';
+ applyFinishing(a,w,h);
+ const out=document.createElement('canvas');out.width=w;out.height=h+footerHeight(w);const c=out.getContext('2d');c.drawImage(art,0,0);drawBrandFooter(c,w,h,current);return out;
+}
+// The large picture can fail on a device short of memory; the page's own size always works.
+async function exportBlob(){try{return await blobOf(brandedArtwork(2));}catch(e){return blobOf(brandedArtwork(1));}}
+$('download').onclick=async()=>{const button=$('download');if(button.disabled)return;button.disabled=true;try{finishStroke();if(!current)throw Error('No page is open');const page=current;await persist();const blob=await exportBlob(),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${brand.slug}-${page.id}.png`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);toast('Your artwork is ready to download.');window.dispatchEvent(new CustomEvent('chromalie:download',{detail:page}));}catch(error){toast('Could not prepare the download. Try again or save an editable project.');console.error('Artwork export failed',error);}finally{button.disabled=false;}};
+$('print').onclick=()=>{finishStroke();window.dispatchEvent(new CustomEvent('chromalie:print',{detail:current}));exportBlob().then(blob=>{const url=URL.createObjectURL(blob),im=document.createElement('img');im.className='print-art';im.src=url;document.body.append(im);im.onload=()=>{window.print();setTimeout(()=>{im.remove();URL.revokeObjectURL(url);},1000);};}).catch(()=>toast('Could not prepare the page for printing. Try Download.'));};
 // Sharing (share.js) asks for the page as it would download.
 window.chromalieArtwork=async()=>{if(!current)return null;finishStroke();const page=current,out=brandedArtwork();await persist();return {blob:await blobOf(out),page};};
 function downloadFile(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}
@@ -755,9 +868,10 @@ async function init(){
  renderColours();updateTools();
  try{$('storage-notice').hidden=localStorage.getItem('chromalie-storage-notice')==='seen';}catch(e){$('storage-notice').hidden=false;}if(location.hash==='#storage')openStorage();
  try{const response=await fetch('catalog.json');if(!response.ok)throw Error('catalog');catalog=applyCollectionNames(await response.json());catalog.pages.sort((a,b)=>a.number-b.number||catalog.books.findIndex(p=>p.id===a.book)-catalog.books.findIndex(p=>p.id===b.book));
-  $('page-count').textContent=`${catalog.pages.length} pages · ${catalog.books.length} collections`;
+  updatePageCount();
   const cats=['All',...new Set(catalog.pages.map(p=>p.category))];for(const c of cats){const b=document.createElement('button');b.dataset.category=c;b.textContent=c;b.classList.toggle('active',c==='All');b.onclick=()=>{category=c;visible=24;document.querySelectorAll('[data-category]').forEach(btn=>btn.classList.toggle('active',btn===b));renderLibrary();};$('categories').append(b);}
   for(const b of catalog.books){const o=document.createElement('option');o.value=b.id;o.textContent=`${b.title} · ${b.subject} (${b.count})`;$('book-filter').append(o);}renderLibrary();
+  const addressed=catalog.pages.find(p=>p.id===pageHash());if(addressed){try{history.replaceState({chromaliePage:addressed.id,fromLibrary:false},'',location.hash);}catch(e){}openPage(addressed,true);}
  }catch(e){$('page-count').textContent='Library unavailable';$('page-grid').textContent='The library could not load. Please reload the page.';}
 }
 init();

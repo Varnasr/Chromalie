@@ -4,7 +4,7 @@ Chromalie is a free colouring studio at https://chromalie.page. Choose a page fr
 
 ## Find a page
 
-Browse the collections or use the search box, subject filters and detail filter. Select a page to open the painting workspace. **My work** shows paintings saved on the current device. **My journal** presents saved work as a flipbook.
+Every page has a name that says what it shows. Type a subject in the search box (diya, owl, rocket); every word typed has to match a page's name, its search words, its collection or its level. The subject filters and the collection list narrow the library further, and the detail filter sorts pages by the number of shapes to colour: Simple (under 150), Medium (150 to 399), Detailed (400 to 899) and Intricate (900 or more). An open page has its own address (`#page/<id>`), so the browser's Back button returns to the library, a reload reopens the page, and the address can be kept or sent. Select a page to open the painting workspace. **My work** shows paintings saved on the current device. **My journal** presents saved work as a flipbook.
 
 ## Painting tools
 
@@ -23,7 +23,7 @@ On smaller screens, tap **Tools +**, then open the **Colours**, brush or setting
 
 When device saving is enabled, Chromalie saves painting progress in your browser's IndexedDB storage. This is local to that browser and device; it is **not** a cloud account or backup. If a save fails, use **Retry save** or download a copy before leaving. You can change storage preferences in the storage settings.
 
-Use **Save editable project** to download a Chromalie JSON project, and **Open project** to restore it. Use PNG download for a finished image; printing is also available. Keep downloaded backups: clearing browser data or using a different device can mean locally saved work is unavailable.
+Use **Save editable project** to download a Chromalie JSON project, and **Open project** to restore it. Use PNG download for a finished image; printing is also available. Both are drawn at twice the page's pixels with the outlines smoothed, which prints more cleanly and adds no detail the drawing does not have. The count over the page says how many shapes are coloured; a tap on it marks the empty ones in pink, and colouring the last one marks the page Finished. Keep downloaded backups: clearing browser data or using a different device can mean locally saved work is unavailable.
 
 ## Common problems
 

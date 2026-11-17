@@ -24,6 +24,14 @@ Built-in palettes and the custom palette are rendered by `renderColours()` in `d
 
 `renderHarmonyColours()` also runs once at startup, so the row is filled before the first colour change. The studio panel in `index.html` is never shown: `dist/mobile.js` moves each control into a strip, and the Colours strip holds the palette chips, swatches, shade, custom colour, remove-colour button, recent colours and harmonies. A new control added to the panel but not to a `strip(...)` list in `mobile.js` is unreachable at every width. The browser test opens the Colours strip and fails if the recent or harmony rows are not in it.
 
+## Names, levels, progress and addresses
+
+`applyCollectionNames()` in `dist/brand.js` gives each page `title` (its `name`), `series` (collection and number) and `search` (everything the search box reads); `matchesSearch()` requires every typed word. `MIN_SHAPE_PIXELS` there is the one definition of a countable shape, shared by `scripts/count-shapes.mjs` (catalogue `shapes` and `level`) and `measureProgress()` in `dist/app.js`; the browser test fails if the count over the page differs from the catalogue's. Rerun `count-shapes.mjs` after adding or replacing artwork or changing the engine's thresholds.
+
+`measureProgress()` reads the merged paint once, 450 ms after the last change, and counts a shape as coloured when half of it carries paint. `persist()` stores `finished` with the saved page. Page addresses are `#page/<id>`: `addressFor()` pushes one history entry from the library and replaces it inside the studio, `popstate` opens or closes the studio, and `leaveStudio()` is the Library button. Call `leaveStudio()` or `closeStudio()`, never hide the studio directly, or the address and the screen disagree.
+
+Exports go through `brandedArtwork(scale)`; `exportBlob()` tries scale 2 and falls back to 1.
+
 ## Netlify deployment
 
 `netlify.toml` is the production build source of truth: the build restores checksum-approved artwork, stamps asset references and publishes `dist/`. The GitHub Actions workflow performs independent checks and uploads responsive screenshots but does not deploy the site. Because the two systems run separately, a green Netlify deployment does not establish that GitHub Actions tests passed. Confirm both and inspect the live result.

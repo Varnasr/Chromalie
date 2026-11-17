@@ -1,4 +1,4 @@
-// Guidance in the studio: a short tour on the first visit, and a tip on every
+// Guidance in the studio: one hint on the first visit, a tour for anyone who asks, and a tip on every
 // control when a mouse or pen rests on it or the keyboard reaches it. Touch gets
 // no tips, because a press on a phone is a tap and should act at once.
 const $ = id => document.getElementById(id);
@@ -216,10 +216,27 @@ $('studio').addEventListener('scroll', () => { if (tourOpen) show(); }, true);
 new MutationObserver(() => { if ($('studio').hidden && tourOpen) { tourOpen = false; ring.hidden = card.hidden = true; } })
   .observe($('studio'), { attributes: true, attributeFilter: ['hidden'] });
 
-// First visit: start once the page has finished loading in the studio.
+// First visit: one line over the page, not a tour. It says the one thing needed to begin, stays out of
+// the way of the page, and goes when the page is touched. The tour is one tap away for anyone who
+// wants it, and Help always offers it.
+const hint = document.createElement('div');
+hint.className = 'guide-hint';
+hint.setAttribute('role', 'note');
+hint.hidden = true;
+hint.innerHTML = '<p>Pick a colour and paint. <strong>Fill</strong> colours a whole shape in one tap.</p>' +
+  '<span><button type="button" class="guide-hint-tour">Show me around</button>' +
+  '<button type="button" class="guide-hint-close" aria-label="Close this tip">Got it</button></span>';
+document.querySelector('.canvas-area').append(hint);
+function endHint() { if (hint.hidden) return; hint.hidden = true; store.set(); }
+hint.querySelector('.guide-hint-close').onclick = endHint;
+hint.querySelector('.guide-hint-tour').onclick = () => { endHint(); open(); };
+$('viewport').addEventListener('pointerdown', endHint);
 new MutationObserver(() => {
-  if (!$('studio').hidden && $('loading').hidden && !tourOpen && store.get() !== 'done') setTimeout(open, 300);
+  if (!$('studio').hidden && $('loading').hidden && !tourOpen && store.get() !== 'done') hint.hidden = false;
+  if ($('studio').hidden) hint.hidden = true;
 }).observe($('loading'), { attributes: true, attributeFilter: ['hidden'] });
+new MutationObserver(() => { if ($('studio').hidden) hint.hidden = true; })
+  .observe($('studio'), { attributes: true, attributeFilter: ['hidden'] });
 
 // Help offers the tour again.
 $('help-button').addEventListener('click', () => {

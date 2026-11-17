@@ -1,12 +1,16 @@
 # Chromalie development roadmap
 
-Updated 20 October 2026. Production hosting: **Netlify**, source and CI: **GitHub**.
+Updated 17 November 2026. Production hosting: **Netlify**, source and CI: **GitHub**.
 
 A feature is **implemented** when its code is on `main`; it is **verified** only when automated checks and relevant real-device checks have passed. A successful Netlify deploy alone does not prove the feature works.
 
 ## Implemented in the repository
 
-- Catalogue, search, collections, detail filtering, painting studio and introductory tour.
+- Catalogue, collections, painting studio, a first-visit hint and a tour on request.
+- A name and search words for every page (drafted 17 November 2026 from the pictures, for the owner to correct), search that matches every word typed, and four detail levels set by the number of shapes on each page.
+- An address for every open page, so Back returns to the library and a reload reopens the page.
+- A count of shapes coloured, a way to see the ones left, and a finish dialog; finished pages are marked in My work.
+- Downloads and prints at twice the page's pixels with smoothed outlines.
 - Region-aware fill and brushes, freehand mode, eraser, adjustable size and opacity, zoom and pan.
 - Six built-in colour palettes, editable custom palette, native colour picker, recent session colours and harmony suggestions.
 - Up to five paint layers: select, show/hide, opacity, rename, reorder and delete. Each layer has a separate session undo/redo history.
@@ -24,6 +28,10 @@ A feature is **implemented** when its code is on `main`; it is **verified** only
 5. Review brush textures, stroke smoothing and complex region boundaries on representative pages.
 6. Review artwork quality, source attribution and licensing before adding or replacing pages. The Festivals of India pages were made by the owner, Varna Sri Raman, with an image generator, and she holds whatever rights the generator's terms give her in its output (her statement, 20 October 2026; the generator's name was not recorded). Whether copyright subsists in machine-generated images is unsettled in Indian law, so the credit line describes them as made by her with an image generator and does not claim more. Open: the PLR packs' terms have not been reviewed.
 7. Check real-device printing, sharing, stylus pressure, touch gestures and storage recovery. Covered by the owner's 20 October 2026 test only so far as item 3 says.
+
+8. The 17 November 2026 changes were tested in headless Chromium at 390x844 and 1280x900 only. Not checked: a real phone's Back gesture, the double-size download on a phone short of memory (it falls back to the page's own size), and a printed sheet.
+9. Read the 688 page names against the pictures. They were written mostly from contact sheets; the report on the pull request lists the least certain ones.
+10. `butterflies-042` cannot be filled: its paper is grey and the engine reads all of it as outline. The artwork file needs cleaning and its checksum updating.
 
 ## Deliberately deferred
 
