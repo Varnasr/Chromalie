@@ -743,3 +743,40 @@ img,svg,video,canvas{max-width:100%}
 .toast-action{background:#fff;color:#1b2b24;border:0;border-radius:5px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;white-space:nowrap;min-height:36px}
 .toast-action:focus-visible{outline:3px solid #ffe44b;outline-offset:2px}
 .footer-credit{margin:10px 0 0;color:var(--muted);font-size:14px;line-height:1.6}.footer-credit a{color:inherit;text-decoration:underline;text-underline-offset:3px}.legal-footer .footer-credit{margin:12px 0 0}
+
+/* ---- 17 November 2026: names, progress, first hint, saved-pages view, phone room ---- */
+/* A page card leads with what the picture shows; the collection and number sit under it. */
+.page-card h3{overflow-wrap:anywhere}
+.page-meta span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page-meta span:last-child{flex:none}
+/* My work is the visitor's own pages: the library's subject chips and filters do not belong on it,
+   and the search box earns its place only once there are more than a dozen pages to look through. */
+#library.is-work #categories,#library.is-work .filter-selects,#library.is-work #result-count{display:none}
+#library.is-work.few-saved .library-controls{display:none}
+#library.is-work .sub-controls{margin:0;padding:0;border:0;min-height:0}
+/* Shapes left. Sits between undo and full screen, over the page area. */
+.progress-pill{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:8px;min-height:44px;padding:0 16px 0 10px;border-radius:22px;background:#fffefaf0;border:1px solid var(--line);box-shadow:0 3px 12px #2833231f;color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.progress-pill[hidden]{display:none}
+.progress-pill i{width:22px;height:22px;border-radius:50%;background:conic-gradient(var(--green) var(--p,0deg),#dfe3d8 0);-webkit-mask:radial-gradient(circle,#0000 5px,#000 6px);mask:radial-gradient(circle,#0000 5px,#000 6px)}
+.progress-pill.finished{background:var(--green);color:#fff;border-color:var(--green)}
+.progress-pill.finished i{background:#fff;-webkit-mask:none;mask:none;width:10px;height:10px;margin:0 6px}
+.studio-focus .progress-pill{bottom:14px}
+#left-overlay{pointer-events:none;animation:left-pulse 1.1s ease-in-out infinite alternate}
+#left-overlay[hidden]{display:none}
+@keyframes left-pulse{from{opacity:.45}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#left-overlay{animation:none}}
+.finish-actions{flex-wrap:wrap;margin-top:18px}
+/* The first-visit hint: one line at the top of the page area. Only its buttons take the pointer. */
+.guide-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:4;width:min(560px,calc(100% - 20px));display:flex;align-items:center;gap:12px;justify-content:space-between;padding:10px 12px 10px 16px;border-radius:14px;background:var(--ink);color:#fff;box-shadow:0 6px 22px #28332340;pointer-events:none}
+.guide-hint[hidden]{display:none}
+.guide-hint p{margin:0;font-size:14px;line-height:1.45}
+.guide-hint span{display:flex;gap:6px;flex:none}
+.guide-hint button{pointer-events:auto;min-height:44px;padding:0 12px;border-radius:10px;font-size:14px;color:#fff;white-space:nowrap}
+.guide-hint .guide-hint-tour{text-decoration:underline;text-underline-offset:3px}
+.guide-hint .guide-hint-close{background:#fff;color:var(--ink);font-weight:600}
+@media(max-width:560px){.guide-hint{flex-direction:column;align-items:stretch;gap:6px}.guide-hint span{justify-content:flex-end}}
+/* A tall phone has room under the page for a second row of colours, so sixteen show at once where
+   eight did. Short screens keep the single row, because there the page needs the height. */
+@media(max-width:650px) and (min-height:760px) and (orientation:portrait){
+ .m-quick .m-swatches{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(2,36px);grid-auto-columns:36px;gap:8px 9px;max-height:none!important;justify-content:start;padding:6px 2px 8px}
+}

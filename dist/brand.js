@@ -13,9 +13,17 @@ export const collectionNames={
 };
 export function applyCollectionNames(catalog){
  for(const book of catalog.books){const name=collectionNames[book.id];if(name){book.originalTitle=book.originalTitle||book.title;Object.assign(book,name);}}
- for(const page of catalog.pages){const name=collectionNames[page.book];if(name){page.originalTitle=page.originalTitle||page.title;page.subject=name.subject;page.title=`${name.title} · ${String(page.number).padStart(2,'0')}`;}}
+ for(const page of catalog.pages){const name=collectionNames[page.book];if(name){page.originalTitle=page.originalTitle||page.title;page.subject=name.subject;page.series=`${name.title} · ${String(page.number).padStart(2,'0')}`;page.title=page.name||page.series;}
+  // What the search box reads: the page's name and search words, then its collection, subject and level.
+  page.search=[page.name,...(page.tags||[]),page.series,page.subject,page.originalTitle,page.category,page.level].filter(Boolean).join(' ').toLowerCase();}
  return catalog;
 }
+// Detail levels, by the number of shapes on the page (scripts/count-shapes.mjs writes both).
+export const levels=['Simple','Medium','Detailed','Intricate'];
+// A shape smaller than this many pixels is a speck: it is not counted, in the catalogue or in "shapes left".
+export const MIN_SHAPE_PIXELS=40;
+// Every word typed must be found, in any order, so "diya lamp" and "lamp diya" find the same pages.
+export function matchesSearch(page,query){const words=query.toLowerCase().split(/\s+/).filter(Boolean);return words.every(w=>page.search.includes(w));}
 export function footerHeight(width){return Math.max(60,Math.round(width*.075));}
 export function drawBrandFooter(ctx,width,artHeight,page){
  const h=footerHeight(width),scale=width/1000,y=artHeight+h/2;

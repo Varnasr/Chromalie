@@ -27,3 +27,22 @@ test('Festivals of India pages are credited to the owner with a link',()=>{
  const pages=catalog.pages.filter(p=>p.book==='festivals');assert.ok(pages.length>0);
  for(const p of pages){assert.equal(p.credit,'Varna Sri Raman',p.id);assert.equal(p.creditUrl,'https://storywell.in',p.id);}
 });
+
+test('Every page has a name, search words, a shape count and a level that follows from the count',()=>{
+ const levels=['Simple','Medium','Detailed','Intricate'];
+ for(const p of catalog.pages){
+  assert.equal(typeof p.name,'string',p.id);assert.ok(p.name.trim().length>=4,'no name: '+p.id);
+  assert.ok(!/[\u2013\u2014]/.test(p.name),'dash in name: '+p.id);
+  assert.ok(!/\d+$/.test(p.name.trim()),'a name that ends in a number is a number, not a name: '+p.id);
+  assert.ok(Array.isArray(p.tags)&&p.tags.length>=3,'fewer than three search words: '+p.id);
+  for(const t of p.tags)assert.equal(t,t.toLowerCase().trim(),'search words are lower case: '+p.id);
+  assert.ok(Number.isInteger(p.shapes)&&p.shapes>=0,'no shape count: '+p.id);
+  assert.ok(levels.includes(p.level),'unknown level '+p.level+': '+p.id);
+  // Under ten shapes the engine could not separate the drawing, and the level is not derived from the count.
+  if(p.shapes>=10)assert.equal(p.level,p.shapes<150?'Simple':p.shapes<400?'Medium':p.shapes<900?'Detailed':'Intricate',p.id);
+ }
+});
+test('No two pages of one collection share a name',()=>{
+ const seen=new Map();
+ for(const p of catalog.pages){const key=p.book+'|'+p.name.toLowerCase();assert.ok(!seen.has(key),p.id+' and '+seen.get(key)+' are both named '+p.name);seen.set(key,p.id);}
+});

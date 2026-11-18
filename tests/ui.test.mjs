@@ -100,13 +100,22 @@ for (const [w, h] of [[390, 844], [1280, 900]]) {
   await audit(page, `${tag} home`);
   await capture(page,`${tag}-home`);
 
-  // Open a page. The tour shows the first time; audit it, then close it.
+  // Open a page. The first visit shows one hint over the page and no tour; the tour is behind
+  // "Show me around". Audit both, then close the tour.
   await page.click('#hero-start');
   // The second page is a tall owl; a tall page is the one that can overflow the journal leaf.
   await page.locator('.page-card').nth(1).click();
   await loaded(page);
+  const hint = await page.locator('.guide-hint').waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false);
+  if (!hint) fail(tag, 'the first-visit hint did not appear');
+  else if (await page.locator('.guide-card').isVisible()) fail(tag, 'the tour opened by itself on the first visit');
+  else {
+    ok('the first visit shows one hint and no tour');
+    await audit(page, `${tag} first hint`);
+    await page.click('.guide-hint-tour');
+  }
   const tour = await page.locator('.guide-card').first().waitFor({ state: 'visible', timeout: 5000 }).then(() => true, () => false);
-  if (!tour) fail(tag, 'the first-visit tour did not appear');
+  if (!tour) fail(tag, 'the tour did not open from the hint');
   else {
     await audit(page, `${tag} tour`);
     // On a phone the tools start tucked away, so the tour must say how to open them.
@@ -673,6 +682,101 @@ for (const [w, h] of [[1280, 900], [390, 844]]) {
     if ((await artworkHash()) !== beforeBackground) ok('the same stroke then paints the background'); else fail(tag, 'the stroke still did not paint after Paint background was turned on');
   }
   await audit(page, tag);
+  await ctx.close();
+}
+
+// Names and search, page addresses and Back, progress and the finish, the saved-pages view and the
+// double-size download, at a phone and a desktop size.
+for (const [w, h] of [[390, 844], [1280, 900]]) {
+  const tag = `${w}x${h} finding and finishing`;
+  console.log(`\n${tag}`);
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: w < 700, isMobile: w < 700, acceptDownloads: true });
+  await ctx.addInitScript(() => { try { localStorage.setItem('chromalie-storage-notice', 'seen'); localStorage.setItem('chromalie-tour', 'done'); } catch (e) {} });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(base, { waitUntil: 'networkidle' });
+
+  // Search reads what a page shows, and every word typed has to match.
+  const count = async q => { await page.fill('#search', q); await page.waitForTimeout(150); return parseInt(await page.textContent('#result-count'), 10); };
+  for (const q of ['diya', 'elephant', 'rocket', 'owl', 'lamp diwali']) { const n = await count(q); if (n > 0) ok(`searching "${q}" finds ${n} pages`); else fail(tag, `searching "${q}" finds nothing`); }
+  if (await count('diya rocket') === 0) ok('two words that share no page find nothing'); else fail(tag, '"diya rocket" should find nothing: every word must match');
+  await count('diya');
+  const cardTitle = (await page.locator('.page-card h3').first().innerText()).trim();
+  if (/·\s*\d+$/.test(cardTitle)) fail(tag, `a page card is still titled by its number: ${cardTitle}`); else ok(`a page card is titled by what it shows: ${cardTitle}`);
+  await noOverflow(page, `${tag} search results`);
+
+  // Opening a page gives it an address; Back returns to the library; Forward and a reload reopen it.
+  await page.locator('.page-card').first().click();
+  await loaded(page);
+  const address = page.url();
+  if (/#page\/[a-z0-9-]+$/.test(address)) ok('an open page has its own address'); else fail(tag, `no page address: ${address}`);
+  if ((await page.title()).startsWith(cardTitle)) ok('the tab is titled with the page name'); else fail(tag, `tab title is ${await page.title()}`);
+  await page.goBack(); await page.waitForTimeout(600);
+  if (await page.locator('#studio').isHidden() && await page.locator('#library-title').isVisible() && !page.url().includes('#page/')) ok('Back returns to the library'); else fail(tag, 'Back did not return to the library');
+  await page.goForward(); await loaded(page);
+  if (await page.locator('#canvas').isVisible()) ok('Forward reopens the page'); else fail(tag, 'Forward did not reopen the page');
+  await page.click('#exit-studio'); await page.waitForTimeout(600);
+  if (await page.locator('#studio').isHidden() && !page.url().includes('#page/')) ok('the Library button leaves the page and clears its address'); else fail(tag, 'the Library button left the address behind');
+  await page.goto(base + '#page/space-012', { waitUntil: 'networkidle' }); await page.reload({ waitUntil: 'networkidle' }); await loaded(page);
+  if (await page.locator('#canvas').isVisible() && page.url().endsWith('#page/space-012')) ok('a page address opens that page after a reload'); else fail(tag, 'the page address did not open the page');
+
+  // Progress: the pill counts shapes, a tap marks what is left, and the last shape opens the finish.
+  await page.waitForSelector('#progress-pill:not([hidden])', { timeout: 8000 }).catch(() => {});
+  const pillText = await page.locator('#progress-pill').innerText().catch(() => '');
+  const catalogShapes = await page.evaluate(() => window.chromalieCatalog().pages.find(p => p.id === 'space-012').shapes);
+  const total = +(/of (\d+)/.exec(pillText)?.[1] || 0);
+  if (total && total === catalogShapes) ok(`the pill counts the same ${total} shapes as the catalogue`); else fail(tag, `the pill says "${pillText}", the catalogue says ${catalogShapes} shapes`);
+  await page.click('#progress-pill'); await page.waitForTimeout(300);
+  if (await page.locator('#left-overlay').isVisible()) ok('a tap on the pill marks the shapes that are left'); else fail(tag, 'the shapes left were not marked');
+  await audit(page, `${tag} studio with progress`);
+  await checkVisibleControlsFit(page, `${tag} studio with progress`);
+  // One point inside every countable shape, from the studio's own engine.
+  const points = await page.evaluate(async () => {
+    const { segmentRegions, isBackgroundArea } = await import('./engine.js');
+    const p = window.chromalieCatalog().pages.find(x => x.id === 'space-012');
+    const img = new Image(); img.src = p.image; await img.decode();
+    const c = document.createElement('canvas'); c.width = p.width; c.height = p.height;
+    const g = c.getContext('2d'); g.fillStyle = 'white'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0);
+    const r = segmentRegions(g.getImageData(0, 0, c.width, c.height).data, c.width, c.height, true, 2), inside = new Map();
+    // The pixel of each shape whose whole neighbourhood is the same shape, so the tap cannot miss.
+    for (let y = 6; y < c.height - 6; y += 2) for (let x = 6; x < c.width - 6; x += 2) {
+      const id = r.labels[y * c.width + x];
+      if (!id || inside.has(id) || r.areas[id] < 40 || isBackgroundArea(id, r.areas, r.edge, c.width * c.height)) continue;
+      let clear = 0; for (let k = 1; k <= 6 && r.labels[y * c.width + x + k] === id && r.labels[y * c.width + x - k] === id && r.labels[(y + k) * c.width + x] === id && r.labels[(y - k) * c.width + x] === id; k++) clear = k;
+      if (clear >= 2) inside.set(id, [x / c.width, y / c.height]);
+    }
+    return [...inside.values()];
+  });
+  await page.locator('button[data-m="fill"]:visible').first().click();
+  const pageBox = await page.locator('#canvas').boundingBox();
+  for (const [fx, fy] of points) await page.mouse.click(pageBox.x + pageBox.width * fx, pageBox.y + pageBox.height * fy);
+  const finished = await page.locator('#finish-dialog[open]').waitFor({ state: 'visible', timeout: 6000 }).then(() => true, () => false);
+  if (finished) ok('colouring the last shape opens the finish dialog'); else fail(tag, `the finish dialog did not open; the pill says "${await page.locator('#progress-pill').innerText().catch(() => '')}"`);
+  if (finished) {
+    await audit(page, `${tag} finish dialog`);
+    const [download] = await Promise.all([page.waitForEvent('download', { timeout: 20000 }).catch(() => null), page.click('#finish-download')]);
+    if (!download) fail(tag, 'Download in the finish dialog produced no file');
+    else {
+      const file = path.join(captureDir, `download-${w}.png`); await download.saveAs(file);
+      const png = await readFile(file), width = png.readUInt32BE(16), pageWidth = await page.evaluate(() => window.chromalieCatalog().pages.find(p => p.id === 'space-012').width);
+      if (width === pageWidth * 2) ok(`the download is twice the page's pixels (${width} wide)`); else fail(tag, `the download is ${width} pixels wide; the page is ${pageWidth}`);
+    }
+  }
+  await page.waitForTimeout(1200);
+
+  // My work: the pill counts saved pages, the library's filters are gone, and the page shows as finished.
+  await page.click('#exit-studio'); await page.waitForTimeout(600);
+  await page.locator('[data-view="work"]').first().click(); await page.waitForTimeout(500);
+  const pillWork = await page.textContent('#page-count');
+  if (/^\d+ saved pages?$/.test(pillWork)) ok(`My work counts saved pages: ${pillWork}`); else fail(tag, `My work still shows "${pillWork}"`);
+  if (await page.locator('#categories').isHidden() && await page.locator('#detail-filter').isHidden()) ok('My work hides the library filters'); else fail(tag, 'My work still shows the library filters');
+  const chips = await page.locator('.saved-chip').allInnerTexts();
+  if (finished && !chips.includes('Finished')) fail(tag, `the finished page is not marked Finished: ${chips.join(', ')}`); else if (finished) ok('the finished page is marked Finished');
+  await noOverflow(page, `${tag} my work`);
+  await audit(page, `${tag} my work`);
+  await capture(page, `${tag.replace(/ /g, '-')}-my-work`);
+  if (errors.length) for (const e of errors) fail(tag, `browser error: ${e}`); else ok('no script errors');
   await ctx.close();
 }
 
